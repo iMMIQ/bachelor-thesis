@@ -106,19 +106,15 @@ auto solve(const Plane &plane, const Point &start, const Point &end)
       }
       update_res(dp[i][0], {plane[i].LR.x, L[i]});
       update_res(dp[i][1], {plane[i].LR.x, R[i]});
-      // res = min(res, dp[i][0] + distance({plane[i].LR.x, L[i]}, end));
-      // res = min(res, dp[i][1] + distance({plane[i].LR.x, R[i]}, end));
       continue;
     }
     auto l = calc_slope({plane[i].LR.x, L[i]}, end);
     auto r = calc_slope({plane[i].LR.x, R[i]}, end);
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
       update_res(dp[i][0], {plane[i].LR.x, L[i]});
-      // res = min(res, dp[i][0] + distance({plane[i].LR.x, L[i]}, end));
     }
     if (left_k2 < r + EPS && right_k2 + EPS > l) {
       update_res(dp[i][1], {plane[i].LR.x, R[i]});
-      // res = min(res, dp[i][1] + distance({plane[i].LR.x, R[i]}, end));
     }
   }
   path.emplace_back(end);
