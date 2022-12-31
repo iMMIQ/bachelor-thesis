@@ -20,6 +20,10 @@ auto main(int argc, char **argv) -> int {
   if (start.x > end.x) {
     swap(start, end);
   }
-  cout << Basic::solve(rectangles, start, end) << endl;
+  auto ans = Basic::solve(rectangles, start, end);
+  for (const auto &i : ans.first) {
+    cout << i.x << " " << i.y << endl;
+  }
+  cout << ans.second << endl;
   return 0;
 }
