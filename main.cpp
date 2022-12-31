@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 
 #include "basic.h"
 
@@ -11,7 +10,7 @@ using std::swap;
 auto main(int argc, char **argv) -> int {
   int n;
   cin >> n;
-  vector<Rectangle> rectangles(n);
+  Plane rectangles(n);
   for (int i = 0; i < n; ++i) {
     cin >> rectangles[i].UL.x >> rectangles[i].UL.y >> rectangles[i].LR.x >>
         rectangles[i].LR.y;

@@ -1,9 +1,6 @@
 #include <cmath>
-#include <vector>
 
 #include "data.h"
-
-using std::vector;
 
 namespace Basic {
 inline auto calc_slope(const Point &a, const Point &b) -> double {
@@ -14,6 +11,6 @@ inline auto distance(const Point &a, const Point &b) -> double {
   return hypot(a.x - b.x, a.y - b.y);
 }
 
-auto solve(const vector<Rectangle> &rectangles, const Point &start,
-           const Point &end) -> double;
+auto solve(const Plane &plane, const Point &start, const Point &end)
+    -> std::pair<Path, double>;
 } // namespace Basic
