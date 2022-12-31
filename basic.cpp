@@ -17,6 +17,7 @@ auto solve(const Plane &plane, const Point &start, const Point &end)
   int n = plane.size();
   vector<double> L(n), R(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
+  Path path{start};
   for (int i = 0; i < n - 1; ++i) {
     L[i] = max(plane[i].UL.y, plane[i + 1].UL.y);
     R[i] = min(plane[i].LR.y, plane[i + 1].LR.y);
@@ -58,6 +59,13 @@ auto solve(const Plane &plane, const Point &start, const Point &end)
   if (left_slope < k + EPS && right_slope + EPS > k) {
     res = distance(start, end);
   }
+  auto update_res = [&res, &end, &path](const double dp_value,
+                                        const Point &p) -> void {
+    if (auto value = dp_value + distance(p, end); res > value) {
+      res = value;
+      path.emplace_back(p);
+    }
+  };
   for (int i = start_rectangle; i < end_rectangle; ++i) {
     auto left_k1 = -INF;
     auto right_k1 = INF;
@@ -96,19 +104,24 @@ auto solve(const Plane &plane, const Point &start, const Point &end)
           end.y > plane[end_rectangle].LR.y) {
         continue;
       }
-      res = min(res, dp[i][0] + distance({plane[i].LR.x, L[i]}, end));
-      res = min(res, dp[i][1] + distance({plane[i].LR.x, R[i]}, end));
+      update_res(dp[i][0], {plane[i].LR.x, L[i]});
+      update_res(dp[i][1], {plane[i].LR.x, R[i]});
+      // res = min(res, dp[i][0] + distance({plane[i].LR.x, L[i]}, end));
+      // res = min(res, dp[i][1] + distance({plane[i].LR.x, R[i]}, end));
       continue;
     }
     auto l = calc_slope({plane[i].LR.x, L[i]}, end);
     auto r = calc_slope({plane[i].LR.x, R[i]}, end);
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
-      res = min(res, dp[i][0] + distance({plane[i].LR.x, L[i]}, end));
+      update_res(dp[i][0], {plane[i].LR.x, L[i]});
+      // res = min(res, dp[i][0] + distance({plane[i].LR.x, L[i]}, end));
     }
     if (left_k2 < r + EPS && right_k2 + EPS > l) {
-      res = min(res, dp[i][1] + distance({plane[i].LR.x, R[i]}, end));
+      update_res(dp[i][1], {plane[i].LR.x, R[i]});
+      // res = min(res, dp[i][1] + distance({plane[i].LR.x, R[i]}, end));
     }
   }
-  return {{}, res};
+  path.emplace_back(end);
+  return {path, res};
 }
 } // namespace Basic

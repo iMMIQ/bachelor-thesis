@@ -21,9 +21,10 @@ auto main(int argc, char **argv) -> int {
     swap(start, end);
   }
   auto ans = Basic::solve(rectangles, start, end);
+  cout << "path:\n";
   for (const auto &i : ans.first) {
-    cout << i.x << " " << i.y << endl;
+    cout << i.x << " " << i.y << "\n";
   }
-  cout << ans.second << endl;
+  cout << "distance: " << ans.second << endl;
   return 0;
 }
