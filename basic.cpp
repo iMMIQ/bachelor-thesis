@@ -7,7 +7,7 @@ using std::max;
 using std::min;
 
 namespace Basic {
-auto solve(const Plane &plane, const Point &start, const Point &end)
+auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path, double> {
   const auto INF = 1e11, EPS = 1e-9;
   if (start.x == end.x) {
@@ -59,8 +59,8 @@ auto solve(const Plane &plane, const Point &start, const Point &end)
   if (left_slope < k + EPS && right_slope + EPS > k) {
     res = distance(start, end);
   }
-  auto update_res = [&res, &end, &path](const double dp_value,
-                                        const Point &p) -> void {
+  auto update_res = [&res, &end, &path](const auto dp_value,
+                                        decltype(end) &p) -> void {
     if (auto value = dp_value + distance(p, end); res > value) {
       res = value;
       path.emplace_back(p);

@@ -15,7 +15,7 @@ auto main(int argc, char **argv) -> int {
     cin >> rectangles[i].UL.x >> rectangles[i].UL.y >> rectangles[i].LR.x >>
         rectangles[i].LR.y;
   }
-  Point start, end;
+  Point3D start, end;
   cin >> start.x >> start.y >> end.x >> end.y;
   if (start.x > end.x) {
     swap(start, end);
@@ -23,7 +23,7 @@ auto main(int argc, char **argv) -> int {
   auto ans = Basic::solve(rectangles, start, end);
   cout << "path:\n";
   for (const auto &i : ans.first) {
-    cout << i.x << " " << i.y << "\n";
+    cout << i.x << " " << i.y << " " << i.z << "\n";
   }
   cout << "distance: " << ans.second << endl;
   return 0;
