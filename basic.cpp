@@ -1,5 +1,6 @@
 #include <array>
 #include <cassert>
+#include <limits>
 
 #include "basic.h"
 
@@ -9,18 +10,22 @@ using std::min;
 namespace Basic {
 auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path, double> {
-  const auto INF = 1e11, EPS = 1e-9;
-  if (start.x == end.x) {
-    return {{start, end}, distance(start, end)};
-  }
-  assert(start.x < end.x);
+  constexpr auto INF = std::numeric_limits<double>::max(), EPS = 1e-9;
   int n = plane.size();
-  vector<double> L(n), R(n);
+  vector<Point> L(n), R(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
   Path path{start};
   for (int i = 0; i < n - 1; ++i) {
-    L[i] = max(plane[i].UL.y, plane[i + 1].UL.y);
-    R[i] = min(plane[i].LR.y, plane[i + 1].LR.y);
+    if (plane[i].UL.y > plane[i + 1].UL.y) {
+      L[i] = {plane[i].UL.y, plane[i].UL.z};
+    } else {
+      L[i] = {plane[i + 1].UL.y, plane[i + 1].UL.z};
+    }
+    if (plane[i].LR.y < plane[i + 1].LR.y) {
+      R[i] = {plane[i].LR.y, plane[i].LR.z};
+    } else {
+      R[i] = {plane[i + 1].LR.y, plane[i + 1].LR.z};
+    }
   }
   auto left_slope = -INF;
   auto right_slope = INF;
@@ -28,11 +33,13 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
   int start_rectangle, end_rectangle;
   for (int i = n - 1; i >= 0; --i) {
     if (plane[i].UL.x <= start.x && plane[i].LR.x >= start.x &&
-        plane[i].UL.y <= start.y && plane[i].LR.y >= start.y) {
+        plane[i].UL.y <= start.y && plane[i].LR.y >= start.y &&
+        plane[i].UL.z <= start.z && plane[i].LR.z >= start.z) {
       start_rectangle = i;
     }
     if (plane[i].UL.x <= end.x && plane[i].LR.x >= end.x &&
-        plane[i].UL.y <= end.y && plane[i].LR.y >= end.y) {
+        plane[i].UL.y <= end.y && plane[i].LR.y >= end.y &&
+        plane[i].UL.z <= end.z && plane[i].LR.z >= end.z) {
       end_rectangle = i;
     }
   }

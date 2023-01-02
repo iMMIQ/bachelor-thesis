@@ -22,7 +22,7 @@ inline auto calc_slope(const Point3D &a, const Point3D &b,
         -((x1 - x0) * (x2 - x1) + (y1 - y0) * (y2 - y1) +
           (z1 - z0) * (z2 - z1)) /
         ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1));
-    return {k * (x2 - x1) + x1, k * (y2 - y1) + y1, k * (z2 - z1) + z1};
+    return {std::lerp(x1, x2, k), std::lerp(y1, y2, k), std::lerp(z1, z2, k)};
   };
   // 计算两个三维点在line上的投影之间的距离的差，再除以两个点的距离，得到坡度
   return (distance(b, point_projection(b)) - distance(a, point_projection(a))) /
