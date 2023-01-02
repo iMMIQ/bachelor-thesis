@@ -1,12 +1,11 @@
 #include <cmath>
-#include <math.h>
 
 #include "data.h"
 
 namespace Basic {
 // 计算两个三维点之间的距离
 inline auto distance(const Point3D &a, const Point3D &b) -> double {
-  return hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  return std::hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
 // 计算两个三维点之间的坡度
@@ -14,7 +13,7 @@ inline auto distance(const Point3D &a, const Point3D &b) -> double {
 inline auto calc_slope(const Point3D &a, const Point3D &b,
                        const Line &line = {{0, 0, 0}, {1, 0, 0}}) -> double {
   // 定义一个函数，用于计算三维点在line上的投影
-  auto point_projection = [&line](const Point3D &a) -> Point3D {
+  auto point_projection = [&line](const Point3D &a) -> const Point3D {
     // 计算点a到line的垂足
     const auto x0 = a.x, x1 = line.p1.x, x2 = line.p2.x, y0 = a.y,
                y1 = line.p1.y, y2 = line.p2.y, z0 = a.z, z1 = line.p1.z,

@@ -7,7 +7,7 @@ using std::cout;
 using std::endl;
 using std::swap;
 
-auto main(int argc, char **argv) -> int {
+auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
   int n;
   cin >> n;
   Plane rectangles(n);
