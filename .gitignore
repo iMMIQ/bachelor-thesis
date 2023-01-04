@@ -33,3 +33,10 @@
 
 # Clangd Cache
 .cache/
+
+# build folders
+build*/
+
+# IDE folders
+.vscode/
+.idea/
