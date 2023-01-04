@@ -11,7 +11,7 @@ using namespace std;
 //****************************************************************************80
 
 void nelmin(double fn(double x[]), int n, double start[], double xmin[],
-            double *ynewlo, double reqmin, double step[], int konvge,
+            double *ynewlo, double reqmin, const double step[], int konvge,
             int kcount, int *icount, int *numres, int *ifault)
 
 //****************************************************************************80
@@ -108,30 +108,30 @@ void nelmin(double fn(double x[]), int n, double start[], double xmin[],
 //
 {
   double ccoeff = 0.5;
-  double del;
-  double dn;
-  double dnn;
+  double del = NAN;
+  double dn = NAN;
+  double dnn = NAN;
   double ecoeff = 2.0;
   double eps = 0.001;
-  int i;
-  int ihi;
-  int ilo;
-  int j;
-  int jcount;
-  int l;
-  int nn;
-  double *p;
-  double *p2star;
-  double *pbar;
-  double *pstar;
+  int i = 0;
+  int ihi = 0;
+  int ilo = 0;
+  int j = 0;
+  int jcount = 0;
+  int l = 0;
+  int nn = 0;
+  double *p = nullptr;
+  double *p2star = nullptr;
+  double *pbar = nullptr;
+  double *pstar = nullptr;
   double rcoeff = 1.0;
-  double rq;
-  double x;
-  double *y;
-  double y2star;
-  double ylo;
-  double ystar;
-  double z;
+  double rq = NAN;
+  double x = NAN;
+  double *y = nullptr;
+  double y2star = NAN;
+  double ylo = NAN;
+  double ystar = NAN;
+  double z = NAN;
   //
   //  Check the input parameters.
   //
@@ -316,12 +316,11 @@ void nelmin(double fn(double x[]), int n, double start[], double xmin[],
           //
           //  Retain contraction.
           //
-          else {
-            for (i = 0; i < n; i++) {
-              p[i + ihi * n] = p2star[i];
-            }
-            y[ihi] = y2star;
+          for (i = 0; i < n; i++) {
+            p[i + ihi * n] = p2star[i];
           }
+          y[ihi] = y2star;
+
         }
         //
         //  Contraction on the reflection side of the centroid.
@@ -433,12 +432,10 @@ void nelmin(double fn(double x[]), int n, double start[], double xmin[],
   delete[] p2star;
   delete[] pbar;
   delete[] y;
-
-  return;
 }
 //****************************************************************************80
 
-void timestamp(void)
+void timestamp()
 
 //****************************************************************************80
 //
@@ -470,16 +467,14 @@ void timestamp(void)
 #define TIME_SIZE 40
 
   static char time_buffer[TIME_SIZE];
-  const struct tm *tm;
-  time_t now;
+  const struct tm *tm = nullptr;
+  time_t now = 0;
 
-  now = time(NULL);
+  now = time(nullptr);
   tm = localtime(&now);
 
   strftime(time_buffer, TIME_SIZE, "%d %B %Y %I:%M:%S %p", tm);
 
   cout << time_buffer << "\n";
-
-  return;
 #undef TIME_SIZE
 }
