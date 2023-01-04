@@ -15,9 +15,9 @@ inline auto calc_slope(const Point3D &a, const Point3D &b,
   // 定义一个函数，用于计算三维点在line上的投影
   auto point_projection = [&line](const Point3D &a) -> const Point3D {
     // 计算点a到line的垂足
-    const auto x0 = a.x, x1 = line.p1.x, x2 = line.p2.x, y0 = a.y,
-               y1 = line.p1.y, y2 = line.p2.y, z0 = a.z, z1 = line.p1.z,
-               z2 = line.p2.z;
+    const auto [x0, y0, z0] = a;
+    const auto [x1, y1, z1] = line.p1;
+    const auto [x2, y2, z2] = line.p2;
     const auto k =
         -((x1 - x0) * (x2 - x1) + (y1 - y0) * (y2 - y1) +
           (z1 - z0) * (z2 - z1)) /
