@@ -124,7 +124,7 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
       update_res(dp[i][0], {plane[i].UR.x, L[i]});
     }
-    if (left_k2 < r + EPS && right_k2 + EPS > l) {
+    if (left_k2 < r + EPS && right_k2 + EPS > r) {
       update_res(dp[i][1], {plane[i].UR.x, R[i]});
     }
   }
