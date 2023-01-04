@@ -11,6 +11,10 @@ namespace Basic {
 auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max(), EPS = 1e-9;
+  Point3D tmp = {plane[0].LL.x - 100, plane[0].LL.y - 100, plane[0].LL.z - 100};
+  Point3D tmp2 = {plane[0].LR.x - 100, plane[0].LR.y - 100,
+                  plane[0].LR.z - 100};
+  const Line x_axis{tmp, tmp2};
   int n = plane.size();
   vector<Point> L(n), R(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
@@ -52,8 +56,8 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
         break;
       }
     }
-    auto l = calc_slope(start, {plane[i].UR.x, L[i]});
-    auto r = calc_slope(start, {plane[i].UR.x, R[i]});
+    auto l = calc_slope(start, {plane[i].UR.x, L[i]}, x_axis);
+    auto r = calc_slope(start, {plane[i].UR.x, R[i]}, x_axis);
     if (left_slope < l + EPS && right_slope + EPS > l) {
       dp[i][0] = distance(start, {plane[i].UR.x, L[i]});
     }
@@ -62,7 +66,7 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     }
     left_slope = max(left_slope, l), right_slope = min(right_slope, r);
   }
-  auto k = calc_slope(start, end);
+  auto k = calc_slope(start, end, x_axis);
   if (left_slope < k + EPS && right_slope + EPS > k) {
     res = distance(start, end);
   }
@@ -79,8 +83,8 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     auto left_k2 = -INF;
     auto right_k2 = INF;
     for (int j = i + 1; j < end_rectangle; ++j) {
-      auto l = calc_slope({plane[i].UR.x, L[i]}, {plane[j].UR.x, L[j]});
-      auto r = calc_slope({plane[i].UR.x, L[i]}, {plane[j].UR.x, R[j]});
+      auto l = calc_slope({plane[i].UR.x, L[i]}, {plane[j].UR.x, L[j]}, x_axis);
+      auto r = calc_slope({plane[i].UR.x, L[i]}, {plane[j].UR.x, R[j]}, x_axis);
       if (left_k1 < l + EPS && right_k1 + EPS > l) {
         dp[j][0] = min(
             dp[i][0] + distance({plane[i].UR.x, L[i]}, {plane[j].UR.x, L[j]}),
@@ -92,8 +96,8 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
             dp[j][1]);
       }
       left_k1 = max(left_k1, l), right_k1 = min(right_k1, r);
-      l = calc_slope({plane[i].UR.x, R[i]}, {plane[j].UR.x, L[j]}),
-      r = calc_slope({plane[i].UR.x, R[i]}, {plane[j].UR.x, R[j]});
+      l = calc_slope({plane[i].UR.x, R[i]}, {plane[j].UR.x, L[j]}, x_axis),
+      r = calc_slope({plane[i].UR.x, R[i]}, {plane[j].UR.x, R[j]}, x_axis);
       if (left_k2 < l + EPS && right_k2 + EPS > l) {
         dp[j][0] = min(
             dp[i][1] + distance({plane[i].UR.x, R[i]}, {plane[j].UR.x, L[j]}),
@@ -115,8 +119,8 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
       update_res(dp[i][1], {plane[i].UR.x, R[i]});
       continue;
     }
-    auto l = calc_slope({plane[i].UR.x, L[i]}, end);
-    auto r = calc_slope({plane[i].UR.x, R[i]}, end);
+    auto l = calc_slope({plane[i].UR.x, L[i]}, end, x_axis);
+    auto r = calc_slope({plane[i].UR.x, R[i]}, end, x_axis);
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
       update_res(dp[i][0], {plane[i].UR.x, L[i]});
     }
