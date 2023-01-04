@@ -1,5 +1,9 @@
+#include <istream>
+#include <ostream>
 #include <vector>
 
+using std::istream;
+using std::ostream;
 using std::vector;
 
 struct Point {
@@ -20,7 +24,23 @@ struct Point3D {
     this->y = p.x;
     this->z = p.y;
   }
+
+  Point3D operator+(const Point3D &p) { return {x + p.x, y + p.y, z + p.z}; }
+  Point3D operator-(const Point3D &p) { return {x - p.x, y - p.y, z - p.z}; }
+
+  friend istream &operator>>(istream &is, Point3D &p);
+  friend ostream &operator<<(ostream &os, const Point3D &p);
 };
+
+inline istream &operator>>(istream &is, Point3D &p) {
+  is >> p.x >> p.y >> p.z;
+  return is;
+}
+
+inline ostream &operator<<(ostream &os, const Point3D &p) {
+  os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
+  return os;
+}
 
 struct Line {
   // (x - p1.x) / (p2.x - p1.x) = (y - p1.y) / (p2.y - p1.y) =
@@ -29,13 +49,17 @@ struct Line {
 };
 
 struct Rectangle {
-  Point3D UL, LR;
+  Point3D LL; // 左下
+  Point3D UR; // 右上
+  Point3D LR; // 右下
 };
 
+/** Unused
 struct Cube {
   Rectangle bottom;
   double bottom_z, height;
 };
+**/
 
 using Plane = vector<Rectangle>;
 

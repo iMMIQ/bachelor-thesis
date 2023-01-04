@@ -16,15 +16,15 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
   Path path{start};
   for (int i = 0; i < n - 1; ++i) {
-    if (plane[i].UL.y > plane[i + 1].UL.y) {
-      L[i] = {plane[i].UL.y, plane[i].UL.z};
+    if (plane[i].LL.y > plane[i + 1].LL.y) {
+      L[i] = {plane[i].LL.y, plane[i].LL.z};
     } else {
-      L[i] = {plane[i + 1].UL.y, plane[i + 1].UL.z};
+      L[i] = {plane[i + 1].LL.y, plane[i + 1].LL.z};
     }
-    if (plane[i].LR.y < plane[i + 1].LR.y) {
-      R[i] = {plane[i].LR.y, plane[i].LR.z};
+    if (plane[i].UR.y < plane[i + 1].UR.y) {
+      R[i] = {plane[i].UR.y, plane[i].UR.z};
     } else {
-      R[i] = {plane[i + 1].LR.y, plane[i + 1].LR.z};
+      R[i] = {plane[i + 1].UR.y, plane[i + 1].UR.z};
     }
   }
   auto left_slope = -INF;
@@ -32,33 +32,33 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
   auto res = INF;
   int start_rectangle, end_rectangle;
   for (int i = n - 1; i >= 0; --i) {
-    if (plane[i].UL.x <= start.x && plane[i].LR.x >= start.x &&
-        plane[i].UL.y <= start.y && plane[i].LR.y >= start.y &&
-        plane[i].UL.z <= start.z && plane[i].LR.z >= start.z) {
+    if (plane[i].LL.x <= start.x && plane[i].UR.x >= start.x &&
+        plane[i].LL.y <= start.y && plane[i].UR.y >= start.y &&
+        plane[i].LL.z <= start.z && plane[i].UR.z >= start.z) {
       start_rectangle = i;
     }
-    if (plane[i].UL.x <= end.x && plane[i].LR.x >= end.x &&
-        plane[i].UL.y <= end.y && plane[i].LR.y >= end.y &&
-        plane[i].UL.z <= end.z && plane[i].LR.z >= end.z) {
+    if (plane[i].LL.x <= end.x && plane[i].UR.x >= end.x &&
+        plane[i].LL.y <= end.y && plane[i].UR.y >= end.y &&
+        plane[i].LL.z <= end.z && plane[i].UR.z >= end.z) {
       end_rectangle = i;
     }
   }
   for (int i = start_rectangle; i < end_rectangle; ++i) {
-    if (i == start_rectangle && start.x == plane[i].LR.x) {
-      dp[i][0] = distance(start, {plane[i].LR.x, L[i]});
-      dp[i][1] = distance(start, {plane[i].LR.x, R[i]});
-      if (start.y < plane[i].UL.y || start.y > plane[i].LR.y) {
+    if (i == start_rectangle && start.x == plane[i].UR.x) {
+      dp[i][0] = distance(start, {plane[i].UR.x, L[i]});
+      dp[i][1] = distance(start, {plane[i].UR.x, R[i]});
+      if (start.y < plane[i].LL.y || start.y > plane[i].UR.y) {
         left_slope = INF, right_slope = -INF;
         break;
       }
     }
-    auto l = calc_slope(start, {plane[i].LR.x, L[i]});
-    auto r = calc_slope(start, {plane[i].LR.x, R[i]});
+    auto l = calc_slope(start, {plane[i].UR.x, L[i]});
+    auto r = calc_slope(start, {plane[i].UR.x, R[i]});
     if (left_slope < l + EPS && right_slope + EPS > l) {
-      dp[i][0] = distance(start, {plane[i].LR.x, L[i]});
+      dp[i][0] = distance(start, {plane[i].UR.x, L[i]});
     }
     if (left_slope < r + EPS && right_slope + EPS > r) {
-      dp[i][1] = distance(start, {plane[i].LR.x, R[i]});
+      dp[i][1] = distance(start, {plane[i].UR.x, R[i]});
     }
     left_slope = max(left_slope, l), right_slope = min(right_slope, r);
   }
@@ -79,49 +79,49 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     auto left_k2 = -INF;
     auto right_k2 = INF;
     for (int j = i + 1; j < end_rectangle; ++j) {
-      auto l = calc_slope({plane[i].LR.x, L[i]}, {plane[j].LR.x, L[j]});
-      auto r = calc_slope({plane[i].LR.x, L[i]}, {plane[j].LR.x, R[j]});
+      auto l = calc_slope({plane[i].UR.x, L[i]}, {plane[j].UR.x, L[j]});
+      auto r = calc_slope({plane[i].UR.x, L[i]}, {plane[j].UR.x, R[j]});
       if (left_k1 < l + EPS && right_k1 + EPS > l) {
         dp[j][0] = min(
-            dp[i][0] + distance({plane[i].LR.x, L[i]}, {plane[j].LR.x, L[j]}),
+            dp[i][0] + distance({plane[i].UR.x, L[i]}, {plane[j].UR.x, L[j]}),
             dp[j][0]);
       }
       if (left_k1 < r + EPS && right_k1 + EPS > r) {
         dp[j][1] = min(
-            dp[i][0] + distance({plane[i].LR.x, L[i]}, {plane[j].LR.x, R[j]}),
+            dp[i][0] + distance({plane[i].UR.x, L[i]}, {plane[j].UR.x, R[j]}),
             dp[j][1]);
       }
       left_k1 = max(left_k1, l), right_k1 = min(right_k1, r);
-      l = calc_slope({plane[i].LR.x, R[i]}, {plane[j].LR.x, L[j]}),
-      r = calc_slope({plane[i].LR.x, R[i]}, {plane[j].LR.x, R[j]});
+      l = calc_slope({plane[i].UR.x, R[i]}, {plane[j].UR.x, L[j]}),
+      r = calc_slope({plane[i].UR.x, R[i]}, {plane[j].UR.x, R[j]});
       if (left_k2 < l + EPS && right_k2 + EPS > l) {
         dp[j][0] = min(
-            dp[i][1] + distance({plane[i].LR.x, R[i]}, {plane[j].LR.x, L[j]}),
+            dp[i][1] + distance({plane[i].UR.x, R[i]}, {plane[j].UR.x, L[j]}),
             dp[j][0]);
       }
       if (left_k2 < r + EPS && right_k2 + EPS > r) {
         dp[j][1] = min(
-            dp[i][1] + distance({plane[i].LR.x, R[i]}, {plane[j].LR.x, R[j]}),
+            dp[i][1] + distance({plane[i].UR.x, R[i]}, {plane[j].UR.x, R[j]}),
             dp[j][1]);
       }
       left_k2 = max(left_k2, l), right_k2 = min(right_k2, r);
     }
-    if (i == end_rectangle - 1 && end.x == plane[end_rectangle].UL.x) {
-      if (end.y < plane[end_rectangle].UL.y ||
-          end.y > plane[end_rectangle].LR.y) {
+    if (i == end_rectangle - 1 && end.x == plane[end_rectangle].LL.x) {
+      if (end.y < plane[end_rectangle].LL.y ||
+          end.y > plane[end_rectangle].UR.y) {
         continue;
       }
-      update_res(dp[i][0], {plane[i].LR.x, L[i]});
-      update_res(dp[i][1], {plane[i].LR.x, R[i]});
+      update_res(dp[i][0], {plane[i].UR.x, L[i]});
+      update_res(dp[i][1], {plane[i].UR.x, R[i]});
       continue;
     }
-    auto l = calc_slope({plane[i].LR.x, L[i]}, end);
-    auto r = calc_slope({plane[i].LR.x, R[i]}, end);
+    auto l = calc_slope({plane[i].UR.x, L[i]}, end);
+    auto r = calc_slope({plane[i].UR.x, R[i]}, end);
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
-      update_res(dp[i][0], {plane[i].LR.x, L[i]});
+      update_res(dp[i][0], {plane[i].UR.x, L[i]});
     }
     if (left_k2 < r + EPS && right_k2 + EPS > l) {
-      update_res(dp[i][1], {plane[i].LR.x, R[i]});
+      update_res(dp[i][1], {plane[i].UR.x, R[i]});
     }
   }
   path.emplace_back(end);
