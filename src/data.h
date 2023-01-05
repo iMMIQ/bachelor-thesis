@@ -25,8 +25,12 @@ struct Point3D {
     this->z = p.y;
   }
 
-  Point3D operator+(const Point3D &p) { return {x + p.x, y + p.y, z + p.z}; }
-  Point3D operator-(const Point3D &p) { return {x - p.x, y - p.y, z - p.z}; }
+  Point3D operator+(const Point3D &p) const {
+    return {x + p.x, y + p.y, z + p.z};
+  }
+  Point3D operator-(const Point3D &p) const {
+    return {x - p.x, y - p.y, z - p.z};
+  }
 
   friend istream &operator>>(istream &is, Point3D &p);
   friend ostream &operator<<(ostream &os, const Point3D &p);

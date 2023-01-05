@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <limits>
@@ -11,10 +12,9 @@ namespace Basic {
 auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max(), EPS = 1e-9;
-  Point3D tmp = {plane[0].LL.x - 100, plane[0].LL.y - 100, plane[0].LL.z - 100};
-  Point3D tmp2 = {plane[0].LR.x - 100, plane[0].LR.y - 100,
-                  plane[0].LR.z - 100};
-  const Line x_axis{tmp, tmp2};
+  // TODO: 这样定义是因为斜率计算未考虑正负值，需要修改calc_slope函数
+  const Line x_axis{plane[0].LL - Point3D(100, 100, 100),
+                    plane[0].LR - Point3D(100, 100, 100)};
   int n = plane.size();
   vector<Point> L(n), R(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
@@ -34,19 +34,37 @@ auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
   auto left_slope = -INF;
   auto right_slope = INF;
   auto res = INF;
-  int start_rectangle, end_rectangle;
-  for (int i = n - 1; i >= 0; --i) {
-    if (plane[i].LL.x <= start.x && plane[i].UR.x >= start.x &&
-        plane[i].LL.y <= start.y && plane[i].UR.y >= start.y &&
-        plane[i].LL.z <= start.z && plane[i].UR.z >= start.z) {
-      start_rectangle = i;
+  auto isCoplanar = [](const Point3D &a, const Point3D &b, const Point3D &c,
+                       const Point3D &d) -> bool {
+    auto p1 = a - b;
+    auto p2 = a - c;
+    auto p3 = a - d;
+    return std::abs(dot(p1, cross(p2, p3))) < EPS;
+  };
+  auto isPointInsideRectangle = [&isCoplanar](const Point3D &p,
+                                              const Rectangle &r) -> bool {
+    if (isCoplanar(r.LL, r.LR, r.UR, p)) {
+      const auto p1 = point_projection(p, {r.LR, r.LL});
+      const auto p2 = point_projection(p, {r.LR, r.UR});
+      return std::abs(distance(p1, r.LR) + distance(p1, r.LL) -
+                      distance(r.LL, r.LR)) < EPS &&
+             std::abs(distance(p2, r.LR) + distance(p2, r.UR) -
+                      distance(r.UR, r.LR)) < EPS;
     }
-    if (plane[i].LL.x <= end.x && plane[i].UR.x >= end.x &&
-        plane[i].LL.y <= end.y && plane[i].UR.y >= end.y &&
-        plane[i].LL.z <= end.z && plane[i].UR.z >= end.z) {
-      end_rectangle = i;
-    }
-  }
+    return false;
+  };
+  int start_rectangle =
+      std::ranges::find_if(plane.begin(), plane.end(),
+                           [&start, &isPointInsideRectangle](const auto &r) {
+                             return isPointInsideRectangle(start, r);
+                           }) -
+      plane.begin();
+  int end_rectangle =
+      std::ranges::find_if(plane.begin(), plane.end(),
+                           [&end, &isPointInsideRectangle](const auto &r) {
+                             return isPointInsideRectangle(end, r);
+                           }) -
+      plane.begin();
   for (int i = start_rectangle; i < end_rectangle; ++i) {
     if (i == start_rectangle && start.x == plane[i].UR.x) {
       dp[i][0] = distance(start, {plane[i].UR.x, L[i]});
