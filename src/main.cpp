@@ -15,7 +15,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
   }
   Point3D start, end;
   cin >> start >> end;
-  auto ans = Basic::solve(plane, start, end);
+  auto ans = Basic::solve3D(plane, start, end);
   cout << "path:\n";
   for (const auto &i : ans.first) {
     cout << i << endl;

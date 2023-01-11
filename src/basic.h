@@ -3,7 +3,10 @@
 #include "data.h"
 
 namespace Basic {
-// 计算两个三维点之间的距离
+inline auto distance(const Point &a, const Point &b) -> double {
+  return std::hypot(a.x - b.x, a.y - b.y);
+}
+
 inline auto distance(const Point3D &a, const Point3D &b) -> double {
   return std::hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 }
@@ -15,6 +18,14 @@ inline auto dot(const Point3D &a, const Point3D &b) -> double {
 inline auto cross(const Point3D &a, const Point3D &b) -> Point3D {
   return {a.y * b.z - b.y * a.z, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
+
+inline auto isCoplanar(const Point3D &a, const Point3D &b, const Point3D &c,
+                       const Point3D &d) -> bool {
+  auto p1 = a - b;
+  auto p2 = a - c;
+  auto p3 = a - d;
+  return std::abs(dot(p1, cross(p2, p3))) < 1e-9;
+};
 
 // 定义一个函数，用于计算三维点在line上的投影
 inline auto point_projection(const Point3D &a, const Line &line)
@@ -31,14 +42,14 @@ inline auto point_projection(const Point3D &a, const Line &line)
 
 // 计算两个三维点之间的坡度
 // line参数为参考线，默认为x轴
-inline auto calc_slope(const Point3D &a, const Point3D &b,
-                       const Line &line = {{0, 0, 0}, {1, 0, 0}}) -> double {
+inline auto calc_slope(const Point &a, const Point &b) -> double {
   // 计算两个三维点在line上的投影之间的距离的差，再除以两个点的距离，得到坡度
-  return (distance(b, point_projection(b, line)) -
-          distance(a, point_projection(a, line))) /
-         distance(point_projection(a, line), point_projection(b, line));
+  return (b.y - a.y) / (b.x - a.x);
 }
 
-auto solve(const Plane &plane, const Point3D &start, const Point3D &end)
-    -> std::pair<Path, double>;
+auto solve(const vector<Rectangle> &rectangles, const Point &start,
+           const Point &end) -> std::pair<Path, double>;
+
+auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
+    -> std::pair<Path3D, double>;
 } // namespace Basic

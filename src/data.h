@@ -8,7 +8,14 @@ using std::vector;
 
 struct Point {
   double x{0}, y{0};
+
+  friend ostream &operator<<(ostream &os, const Point &p);
 };
+
+inline ostream &operator<<(ostream &os, const Point &p) {
+  os << "(" << p.x << ", " << p.y << ")";
+  return os;
+}
 
 struct Point3D {
   double x{0}, y{0}, z{0};
@@ -53,6 +60,11 @@ struct Line {
 };
 
 struct Rectangle {
+  Point LL; // 左下
+  Point UR; // 右上
+};
+
+struct Rectangle3D {
   Point3D LL; // 左下
   Point3D UR; // 右上
   Point3D LR; // 右下
@@ -65,6 +77,7 @@ struct Cube {
 };
 **/
 
-using Plane = vector<Rectangle>;
+using Plane = vector<Rectangle3D>;
 
-using Path = vector<Point3D>;
+using Path = vector<Point>;
+using Path3D = vector<Point3D>;
