@@ -40,10 +40,25 @@ inline auto point_projection(const Point3D &a, const Line &line)
   return {std::lerp(x1, x2, k), std::lerp(y1, y2, k), std::lerp(z1, z2, k)};
 };
 
-// 计算两个三维点之间的坡度
-// line参数为参考线，默认为x轴
+inline auto isPointInsideRectangle(const Point &p, const Rectangle &r) -> bool {
+  return p.x >= r.LL.x && p.x <= r.UR.x && p.y >= r.LL.y && p.y <= r.UR.y;
+};
+
+inline auto isPointInsideRectangle3D(const Point3D &p, const Rectangle3D &r)
+    -> bool {
+  constexpr auto EPS = 1e-9;
+  if (isCoplanar(r.LL, r.LR, r.UR, p)) {
+    const auto p1 = point_projection(p, {r.LR, r.LL});
+    const auto p2 = point_projection(p, {r.LR, r.UR});
+    return std::abs(distance(p1, r.LR) + distance(p1, r.LL) -
+                    distance(r.LL, r.LR)) < EPS &&
+           std::abs(distance(p2, r.LR) + distance(p2, r.UR) -
+                    distance(r.UR, r.LR)) < EPS;
+  }
+  return false;
+};
+
 inline auto calc_slope(const Point &a, const Point &b) -> double {
-  // 计算两个三维点在line上的投影之间的距离的差，再除以两个点的距离，得到坡度
   return (b.y - a.y) / (b.x - a.x);
 }
 

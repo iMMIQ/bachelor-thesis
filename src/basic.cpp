@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <limits>
 
 #include "basic.h"
@@ -23,21 +24,17 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
   auto left_slope = -INF;
   auto right_slope = INF;
   auto res = INF;
-  auto isPointInsideRectangle = [](const Point &p, const Rectangle &r) -> bool {
-    return p.x >= r.LL.x && p.x <= r.UR.x && p.y >= r.LL.y && p.y <= r.UR.y;
-  };
   int start_rectangle =
       std::ranges::find_if(rectangles.begin(), rectangles.end(),
-                           [&start, &isPointInsideRectangle](const auto &r) {
+                           [&start](const auto &r) {
                              return isPointInsideRectangle(start, r);
                            }) -
       rectangles.begin();
   assert(start_rectangle < n);
   int end_rectangle =
-      std::ranges::find_if(rectangles.begin(), rectangles.end(),
-                           [&end, &isPointInsideRectangle](const auto &r) {
-                             return isPointInsideRectangle(end, r);
-                           }) -
+      std::ranges::find_if(
+          rectangles.begin(), rectangles.end(),
+          [&end](const auto &r) { return isPointInsideRectangle(end, r); }) -
       rectangles.begin();
   assert(end_rectangle < n);
   for (int i = start_rectangle; i < end_rectangle; ++i) {
@@ -130,13 +127,72 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
 // TODO!
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double> {
+  auto plane_copy = plane;
+  const auto move = plane_copy[0].LL;
+  if (plane_copy[0].LL.x != 0 || plane_copy[0].LL.y != 0 ||
+      plane_copy[0].LL.z != 0) {
+    for (auto &i : plane_copy) {
+      i.LL = i.LL - move;
+      i.LR = i.LR - move;
+      i.UR = i.UR - move;
+    }
+  }
+  for (auto it = plane_copy.begin(); it != plane_copy.end(); ++it) {
+    if (it->LR.y != it->LL.y) {
+      // TODO: y * cos(theta) - z * sin(theta) = it->LL.y
+      auto theta = std::atan((it->LR.y - it->LL.y) / it->LR.z);
+      auto update_y = [=](double &y, double z) {
+        y = y * std::cos(theta) - z * std::sin(theta);
+      };
+      auto update_z = [=](double y, double &z) {
+        z = y * std::sin(theta) + z * std::cos(theta);
+      };
+      auto update = [&](Rectangle3D &r) {
+        auto tmp_y = r.LL.y;
+        update_y(r.LL.y, r.LL.z);
+        update_z(tmp_y, r.LL.z);
+        tmp_y = r.LR.y;
+        update_y(r.LR.y, r.LR.z);
+        update_z(tmp_y, r.LR.z);
+        tmp_y = r.UR.y;
+        update_y(r.UR.y, r.UR.z);
+        update_z(tmp_y, r.UR.z);
+      };
+      std::for_each(it, plane_copy.end(), update);
+    }
+    if (it->LR.z != 0) {
+      auto theta = std::atan(it->LR.z / it->LR.x);
+      // TODO: check if x > x_last
+      auto update_x = [=](double &x, double z) {
+        x = x * std::sin(theta) + z * std::cos(theta);
+      };
+      auto update_z = [=](double x, double &z) {
+        z = z * std::cos(theta) - x * std::sin(theta);
+      };
+      auto update = [&](Rectangle3D &r) {
+        auto tmp_x = r.LL.x;
+        update_x(r.LL.x, r.LL.z);
+        update_z(tmp_x, r.LL.z);
+        tmp_x = r.LR.x;
+        update_x(r.LR.x, r.LR.z);
+        update_z(tmp_x, r.LR.z);
+        tmp_x = r.UR.x;
+        update_x(r.UR.x, r.UR.z);
+        update_z(tmp_x, r.UR.z);
+      };
+      std::for_each(it, plane_copy.end(), update);
+    }
+  }
+  auto start_copy = start - move;
+  auto end_copy = end - move;
+  // TODO: point in a plane transform to another plane
   vector<Rectangle> rectangles(plane.size());
   for (int i = 0; i < plane.size(); ++i) {
-    rectangles[i] = {{plane[i].LL.x, plane[i].LL.y},
-                     {plane[i].UR.x, plane[i].UR.y}};
+    rectangles[i] = {{plane_copy[i].LL.x, plane_copy[i].LL.y},
+                     {plane_copy[i].UR.x, plane_copy[i].UR.y}};
   }
-  const Point s = {start.x, start.y};
-  const Point e = {end.x, end.y};
+  const Point s = {start_copy.x, start_copy.y};
+  const Point e = {end_copy.x, end_copy.y};
   auto [path, distance] = solve(rectangles, s, e);
   Path3D path3D(path.size());
   for (int i = 0; i < path.size(); ++i) {
