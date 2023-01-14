@@ -124,7 +124,6 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
   return {path, res};
 }
 
-// TODO!
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double> {
   auto plane_copy = plane;
@@ -139,8 +138,25 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
   }
   for (auto it = plane_copy.begin(); it != plane_copy.end(); ++it) {
     if (it->LR.y != it->LL.y) {
-      // TODO: y * cos(theta) - z * sin(theta) = it->LL.y
-      auto theta = std::atan((it->LR.y - it->LL.y) / it->LR.z);
+      // y * cos(theta) - z * sin(theta) = it->LL.y
+      double theta;
+      const auto a = it->LR.y, b = it->LR.z, c = it->LL.y;
+      auto EPS = 1e-9;
+      if (std::abs(a + c) > EPS &&
+          std::abs(a * a + a * c + b * b -
+                   b * std::sqrt(a * a + b * b - c * c)) > EPS) {
+        theta = 2 * std::atan((std::sqrt(a * a + b * b - c * c) - b) / (a + c));
+      } else if (std::abs(a + c) > EPS &&
+                 std::abs(b * std::sqrt(a * a + b * b - c * c) + a * a + a * c +
+                          b * b) > EPS) {
+        theta = 2 * std::atan((-sqrt(a * a + b * b - c * c) - b) / (a + c));
+      } else if (std::abs(b) > EPS && a * a + b * b > EPS &&
+                 std::abs(a + c) <= EPS) {
+        theta = 2 * std::atan(a / b);
+      } else {
+        // ERROR!
+        theta = 0;
+      }
       auto update_y = [=](double &y, double z) {
         y = y * std::cos(theta) - z * std::sin(theta);
       };
@@ -162,30 +178,60 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     }
     if (it->LR.z != 0) {
       auto theta = std::atan(it->LR.z / it->LR.x);
-      // TODO: check if x > x_last
-      auto update_x = [=](double &x, double z) {
-        x = x * std::sin(theta) + z * std::cos(theta);
+      if (it->LR.x * std::sin(theta) + it->LR.x * std::cos(theta) < it->LL.x) {
+        theta = -theta;
+      }
+      auto update_x = [=](double &x) {
+        // Notice: This is NOT bug
+        x = x * std::sin(theta) + x * std::cos(theta);
       };
       auto update_z = [=](double x, double &z) {
         z = z * std::cos(theta) - x * std::sin(theta);
       };
       auto update = [&](Rectangle3D &r) {
-        auto tmp_x = r.LL.x;
-        update_x(r.LL.x, r.LL.z);
-        update_z(tmp_x, r.LL.z);
-        tmp_x = r.LR.x;
-        update_x(r.LR.x, r.LR.z);
-        update_z(tmp_x, r.LR.z);
-        tmp_x = r.UR.x;
-        update_x(r.UR.x, r.UR.z);
-        update_z(tmp_x, r.UR.z);
+        update_z(r.LL.x, r.LL.z);
+        update_x(r.LL.x);
+        update_z(r.LR.x, r.LR.z);
+        update_x(r.LR.x);
+        update_z(r.UR.x, r.UR.z);
+        update_x(r.UR.x);
       };
       std::for_each(it, plane_copy.end(), update);
     }
   }
-  auto start_copy = start - move;
-  auto end_copy = end - move;
-  // TODO: point in a plane transform to another plane
+  auto move_point = [](const Point3D &p, const Rectangle3D &from,
+                       const Rectangle3D &to) {
+    auto va = from.LL - from.LR, vb = from.UR - from.LR, vc = p - from.LR;
+    auto a = (vc.y * vb.z - vb.y * vc.z) / (va.y * vb.z - vb.y * va.z);
+    if (std::isnan(a)) {
+      a = (vc.x * vb.y - vb.x * vc.y) / (va.x * vb.y - vb.x * va.y);
+    }
+    if (std::isnan(a)) {
+      a = (vc.x * vb.z - vb.x * vc.z) / (va.x * vb.z - vb.x * va.z);
+    }
+    auto b = (va.y * vc.z - vc.y * va.z) / (va.y * vb.z - vb.y * va.z);
+    if (std::isnan(b)) {
+      b = (va.x * vc.y - vc.x * va.y) / (va.x * vb.y - vb.x * va.y);
+    }
+    if (std::isnan(b)) {
+      b = (va.x * vc.z - vc.x * va.z) / (va.x * vb.z - vb.x * va.z);
+    }
+    return (to.LL - to.LR) * a + (to.UR - to.LR) * b + to.LR;
+  };
+  auto start_rectangle =
+      std::find_if(
+          plane.begin(), plane.end(),
+          [&](const auto &r) { return isPointInsideRectangle3D(start, r); }) -
+      plane.begin();
+  auto start_copy =
+      move_point(start, plane[start_rectangle], plane_copy[start_rectangle]);
+  auto end_rectangle = std::find_if(plane.begin(), plane.end(),
+                                    [&](const auto &r) {
+                                      return isPointInsideRectangle3D(end, r);
+                                    }) -
+                       plane.begin();
+  auto end_copy =
+      move_point(end, plane[end_rectangle], plane_copy[end_rectangle]);
   vector<Rectangle> rectangles(plane.size());
   for (int i = 0; i < plane.size(); ++i) {
     rectangles[i] = {{plane_copy[i].LL.x, plane_copy[i].LL.y},
@@ -196,7 +242,13 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
   auto [path, distance] = solve(rectangles, s, e);
   Path3D path3D(path.size());
   for (int i = 0; i < path.size(); ++i) {
-    path3D[i] = {path[i].x, path[i].y, 0};
+    auto tmp = std::find_if(rectangles.begin(), rectangles.end(),
+                            [&](const auto &r) {
+                              return isPointInsideRectangle(path[i], r);
+                            }) -
+               rectangles.begin();
+    path3D[i] =
+        move_point({path[i].x, path[i].y, 0}, plane_copy[tmp], plane[tmp]);
   }
   return {path3D, distance};
 }

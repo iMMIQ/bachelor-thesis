@@ -39,6 +39,8 @@ struct Point3D {
     return {x - p.x, y - p.y, z - p.z};
   }
 
+  Point3D operator*(const double a) const { return {a * x, a * y, a * z}; }
+
   friend istream &operator>>(istream &is, Point3D &p);
   friend ostream &operator<<(ostream &os, const Point3D &p);
 };
