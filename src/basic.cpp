@@ -6,8 +6,15 @@
 
 #include "basic.h"
 
+using std::abs;
+using std::atan;
+using std::cos;
+using std::find_if;
+using std::isnan;
 using std::max;
 using std::min;
+using std::sin;
+using std::sqrt;
 
 namespace Basic {
 auto solve(const vector<Rectangle> &rectangles, const Point &start,
@@ -16,7 +23,6 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
   int n = rectangles.size();
   vector<double> L(n), R(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
-  Path path{start};
   for (int i = 0; i < n - 1; ++i) {
     L[i] = max(rectangles[i].LL.y, rectangles[i + 1].LL.y);
     R[i] = min(rectangles[i].UR.y, rectangles[i + 1].UR.y);
@@ -37,11 +43,16 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
           [&end](const auto &r) { return isPointInsideRectangle(end, r); }) -
       rectangles.begin();
   assert(end_rectangle < n);
+  Path path[2]{{start}, {start}};
+  Path res_path;
   for (int i = start_rectangle; i < end_rectangle; ++i) {
-    if (i == start_rectangle && start.x == rectangles[i].UR.x) {
+    if (i == start_rectangle && abs(start.x - rectangles[i].UR.x) < EPS) {
       dp[i][0] = distance(start, {rectangles[i].UR.x, L[i]});
+      path[0] = {start, {rectangles[i].UR.x, L[i]}};
       dp[i][1] = distance(start, {rectangles[i].UR.x, R[i]});
-      if (start.y < rectangles[i].LL.y || start.y > rectangles[i].UR.y) {
+      path[1] = {start, {rectangles[i].UR.x, R[i]}};
+      if (start.y - rectangles[i].LL.y < EPS ||
+          rectangles[i].UR.y - start.y < EPS) {
         left_slope = INF, right_slope = -INF;
         break;
       }
@@ -50,21 +61,48 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
     auto r = calc_slope(start, {rectangles[i].UR.x, R[i]});
     if (left_slope < l + EPS && right_slope + EPS > l) {
       dp[i][0] = distance(start, {rectangles[i].UR.x, L[i]});
+      path[0] = {start, {rectangles[i].UR.x, L[i]}};
     }
     if (left_slope < r + EPS && right_slope + EPS > r) {
       dp[i][1] = distance(start, {rectangles[i].UR.x, R[i]});
+      path[1] = {start, {rectangles[i].UR.x, R[i]}};
     }
     left_slope = max(left_slope, l), right_slope = min(right_slope, r);
   }
   auto k = calc_slope(start, end);
   if (left_slope < k + EPS && right_slope + EPS > k) {
     res = distance(start, end);
+    res_path = {start, end};
   }
-  auto update_res = [&res, &end, &path](const auto dp_value,
-                                        decltype(end) &p) -> void {
-    if (auto value = dp_value + distance(p, end); res > value) {
-      res = value;
-      path.emplace_back(p);
+  auto update_dp = [&](double &dp_value, const double length, const Point from,
+                       const Point to, const unsigned index) {
+    auto tmp = length + distance(from, to);
+    if (dp_value > tmp) {
+      dp_value = tmp;
+      if (auto it = find_if(path[index].begin(), path[index].end(),
+                            [&](const auto &p) {
+                              return abs(p.x - from.x) < EPS &&
+                                     abs(p.y - from.y) < EPS;
+                            });
+          it != path[index].end()) {
+        path[index].erase(it, path[index].end());
+        path[index].emplace_back(from);
+        path[index].emplace_back(to);
+      }
+    }
+  };
+  auto update_res = [&](double &res, const double length, const Point from,
+                        const unsigned index) {
+    auto tmp = length + distance(from, end);
+    if (res > tmp) {
+      res = tmp;
+      auto it =
+          find_if(path[index].begin(), path[index].end(), [&](const auto &p) {
+            return abs(p.x - from.x) < EPS && abs(p.y - from.y) < EPS;
+          });
+      res_path.assign(path[index].begin(), it);
+      res_path.emplace_back(*it);
+      res_path.emplace_back(end);
     }
   };
   for (int i = start_rectangle; i < end_rectangle; ++i) {
@@ -78,50 +116,46 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
       auto r =
           calc_slope({rectangles[i].UR.x, L[i]}, {rectangles[j].UR.x, R[j]});
       if (left_k1 < l + EPS && right_k1 + EPS > l) {
-        dp[j][0] = min(dp[i][0] + distance({rectangles[i].UR.x, L[i]},
-                                           {rectangles[j].UR.x, L[j]}),
-                       dp[j][0]);
+        update_dp(dp[j][0], dp[i][0], {rectangles[i].UR.x, L[i]},
+                  {rectangles[j].UR.x, L[j]}, 0);
       }
       if (left_k1 < r + EPS && right_k1 + EPS > r) {
-        dp[j][1] = min(dp[i][0] + distance({rectangles[i].UR.x, L[i]},
-                                           {rectangles[j].UR.x, R[j]}),
-                       dp[j][1]);
+        update_dp(dp[j][1], dp[i][0], {rectangles[i].UR.x, L[i]},
+                  {rectangles[j].UR.x, R[j]}, 1);
       }
       left_k1 = max(left_k1, l), right_k1 = min(right_k1, r);
       l = calc_slope({rectangles[i].UR.x, R[i]}, {rectangles[j].UR.x, L[j]}),
       r = calc_slope({rectangles[i].UR.x, R[i]}, {rectangles[j].UR.x, R[j]});
       if (left_k2 < l + EPS && right_k2 + EPS > l) {
-        dp[j][0] = min(dp[i][1] + distance({rectangles[i].UR.x, R[i]},
-                                           {rectangles[j].UR.x, L[j]}),
-                       dp[j][0]);
+        update_dp(dp[j][0], dp[i][1], {rectangles[i].UR.x, R[i]},
+                  {rectangles[j].UR.x, L[j]}, 0);
       }
       if (left_k2 < r + EPS && right_k2 + EPS > r) {
-        dp[j][1] = min(dp[i][1] + distance({rectangles[i].UR.x, R[i]},
-                                           {rectangles[j].UR.x, R[j]}),
-                       dp[j][1]);
+        update_dp(dp[j][1], dp[i][1], {rectangles[i].UR.x, R[i]},
+                  {rectangles[j].UR.x, R[j]}, 1);
       }
       left_k2 = max(left_k2, l), right_k2 = min(right_k2, r);
     }
-    if (i == end_rectangle - 1 && end.x == rectangles[end_rectangle].LL.x) {
-      if (end.y < rectangles[end_rectangle].LL.y ||
-          end.y > rectangles[end_rectangle].UR.y) {
+    if (i == end_rectangle - 1 &&
+        abs(end.x - rectangles[end_rectangle].LL.x) < EPS) {
+      if (end.y - rectangles[end_rectangle].LL.y < EPS ||
+          rectangles[end_rectangle].UR.y - end.y < EPS) {
         continue;
       }
-      update_res(dp[i][0], {rectangles[i].UR.x, L[i]});
-      update_res(dp[i][1], {rectangles[i].UR.x, R[i]});
+      update_res(res, dp[i][0], {rectangles[i].UR.x, L[i]}, 0);
+      update_res(res, dp[i][1], {rectangles[i].UR.x, R[i]}, 1);
       continue;
     }
     auto l = calc_slope({rectangles[i].UR.x, L[i]}, end);
     auto r = calc_slope({rectangles[i].UR.x, R[i]}, end);
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
-      update_res(dp[i][0], {rectangles[i].UR.x, L[i]});
+      update_res(res, dp[i][0], {rectangles[i].UR.x, L[i]}, 0);
     }
     if (left_k2 < r + EPS && right_k2 + EPS > r) {
-      update_res(dp[i][1], {rectangles[i].UR.x, R[i]});
+      update_res(res, dp[i][1], {rectangles[i].UR.x, R[i]}, 1);
     }
   }
-  path.emplace_back(end);
-  return {path, res};
+  return {res_path, res};
 }
 
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
@@ -142,26 +176,23 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
       double theta;
       const auto a = it->LR.y, b = it->LR.z, c = it->LL.y;
       auto EPS = 1e-9;
-      if (std::abs(a + c) > EPS &&
-          std::abs(a * a + a * c + b * b -
-                   b * std::sqrt(a * a + b * b - c * c)) > EPS) {
-        theta = 2 * std::atan((std::sqrt(a * a + b * b - c * c) - b) / (a + c));
-      } else if (std::abs(a + c) > EPS &&
-                 std::abs(b * std::sqrt(a * a + b * b - c * c) + a * a + a * c +
-                          b * b) > EPS) {
-        theta = 2 * std::atan((-sqrt(a * a + b * b - c * c) - b) / (a + c));
-      } else if (std::abs(b) > EPS && a * a + b * b > EPS &&
-                 std::abs(a + c) <= EPS) {
-        theta = 2 * std::atan(a / b);
+      if (abs(a + c) > EPS &&
+          abs(a * a + a * c + b * b - b * sqrt(a * a + b * b - c * c)) > EPS) {
+        theta = 2 * atan((sqrt(a * a + b * b - c * c) - b) / (a + c));
+      } else if (abs(a + c) > EPS && abs(b * sqrt(a * a + b * b - c * c) +
+                                         a * a + a * c + b * b) > EPS) {
+        theta = 2 * atan((-sqrt(a * a + b * b - c * c) - b) / (a + c));
+      } else if (abs(b) > EPS && a * a + b * b > EPS && abs(a + c) <= EPS) {
+        theta = 2 * atan(a / b);
       } else {
         // ERROR!
         theta = 0;
       }
       auto update_y = [=](double &y, double z) {
-        y = y * std::cos(theta) - z * std::sin(theta);
+        y = y * cos(theta) - z * sin(theta);
       };
       auto update_z = [=](double y, double &z) {
-        z = y * std::sin(theta) + z * std::cos(theta);
+        z = y * sin(theta) + z * cos(theta);
       };
       auto update = [&](Rectangle3D &r) {
         auto tmp_y = r.LL.y;
@@ -177,16 +208,16 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
       std::for_each(it, plane_copy.end(), update);
     }
     if (it->LR.z != 0) {
-      auto theta = std::atan(it->LR.z / it->LR.x);
-      if (it->LR.x * std::sin(theta) + it->LR.x * std::cos(theta) < it->LL.x) {
+      auto theta = atan(it->LR.z / it->LR.x);
+      if (it->LR.x * sin(theta) + it->LR.x * cos(theta) < it->LL.x) {
         theta = -theta;
       }
       auto update_x = [=](double &x) {
         // Notice: This is NOT bug
-        x = x * std::sin(theta) + x * std::cos(theta);
+        x = x * sin(theta) + x * cos(theta);
       };
       auto update_z = [=](double x, double &z) {
-        z = z * std::cos(theta) - x * std::sin(theta);
+        z = z * cos(theta) - x * sin(theta);
       };
       auto update = [&](Rectangle3D &r) {
         update_z(r.LL.x, r.LL.z);
@@ -202,34 +233,33 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
   auto move_point = [](const Point3D &p, const Rectangle3D &from,
                        const Rectangle3D &to) {
     auto va = from.LL - from.LR, vb = from.UR - from.LR, vc = p - from.LR;
-    auto a = (vc.y * vb.z - vb.y * vc.z) / (va.y * vb.z - vb.y * va.z);
-    if (std::isnan(a)) {
-      a = (vc.x * vb.y - vb.x * vc.y) / (va.x * vb.y - vb.x * va.y);
+    auto a = (vc.x * vb.y - vb.x * vc.y) / (va.x * vb.y - vb.x * va.y);
+    if (isnan(a)) {
+      a = (vc.y * vb.z - vb.y * vc.z) / (va.y * vb.z - vb.y * va.z);
     }
-    if (std::isnan(a)) {
+    if (isnan(a)) {
       a = (vc.x * vb.z - vb.x * vc.z) / (va.x * vb.z - vb.x * va.z);
     }
-    auto b = (va.y * vc.z - vc.y * va.z) / (va.y * vb.z - vb.y * va.z);
-    if (std::isnan(b)) {
-      b = (va.x * vc.y - vc.x * va.y) / (va.x * vb.y - vb.x * va.y);
+    auto b = (va.x * vc.y - vc.x * va.y) / (va.x * vb.y - vb.x * va.y);
+    if (isnan(b)) {
+      b = (va.y * vc.z - vc.y * va.z) / (va.y * vb.z - vb.y * va.z);
     }
-    if (std::isnan(b)) {
+    if (isnan(b)) {
       b = (va.x * vc.z - vc.x * va.z) / (va.x * vb.z - vb.x * va.z);
     }
     return (to.LL - to.LR) * a + (to.UR - to.LR) * b + to.LR;
   };
-  auto start_rectangle =
-      std::find_if(
-          plane.begin(), plane.end(),
-          [&](const auto &r) { return isPointInsideRectangle3D(start, r); }) -
-      plane.begin();
+  auto start_rectangle = find_if(plane.begin(), plane.end(),
+                                 [&](const auto &r) {
+                                   return isPointInsideRectangle3D(start, r);
+                                 }) -
+                         plane.begin();
   auto start_copy =
       move_point(start, plane[start_rectangle], plane_copy[start_rectangle]);
-  auto end_rectangle = std::find_if(plane.begin(), plane.end(),
-                                    [&](const auto &r) {
-                                      return isPointInsideRectangle3D(end, r);
-                                    }) -
-                       plane.begin();
+  auto end_rectangle =
+      find_if(plane.begin(), plane.end(),
+              [&](const auto &r) { return isPointInsideRectangle3D(end, r); }) -
+      plane.begin();
   auto end_copy =
       move_point(end, plane[end_rectangle], plane_copy[end_rectangle]);
   vector<Rectangle> rectangles(plane.size());
@@ -243,10 +273,10 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
   Path3D path3D(path.size());
   for (int i = 0; i < path.size(); ++i) {
     // '&path = path' is an error of clang++
-    auto tmp = std::find_if(rectangles.begin(), rectangles.end(),
-                            [&path = path, i = i](const auto &r) {
-                              return isPointInsideRectangle(path[i], r);
-                            }) -
+    auto tmp = find_if(rectangles.begin(), rectangles.end(),
+                       [&path = path, i = i](const auto &r) {
+                         return isPointInsideRectangle(path[i], r);
+                       }) -
                rectangles.begin();
     path3D[i] =
         move_point({path[i].x, path[i].y, 0}, plane_copy[tmp], plane[tmp]);
