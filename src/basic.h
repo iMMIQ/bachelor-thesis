@@ -3,6 +3,8 @@
 #include "data.h"
 
 namespace Basic {
+constexpr auto EPS = 1e-9;
+
 /**
  * @brief Compute the distance between two 2D points
  * @param a The first point
@@ -83,7 +85,8 @@ inline auto point_projection(const Point3D &a, const Line &line)
  * @return True if the point is inside the rectangle, false otherwise
  */
 inline auto isPointInsideRectangle(const Point &p, const Rectangle &r) -> bool {
-  return p.x >= r.LL.x && p.x <= r.UR.x && p.y >= r.LL.y && p.y <= r.UR.y;
+  return p.x >= r.LL.x - EPS && p.x <= r.UR.x + EPS && p.y >= r.LL.y - EPS &&
+         p.y <= r.UR.y + EPS;
 };
 
 /**
