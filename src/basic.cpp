@@ -161,21 +161,20 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double> {
   auto plane_copy = plane;
-  const auto move = plane_copy[0].LL;
-  if (plane_copy[0].LL.x != 0 || plane_copy[0].LL.y != 0 ||
-      plane_copy[0].LL.z != 0) {
-    for (auto &i : plane_copy) {
-      i.LL = i.LL - move;
-      i.LR = i.LR - move;
-      i.UR = i.UR - move;
-    }
-  }
+  constexpr auto EPS = 1e-9;
   for (auto it = plane_copy.begin(); it != plane_copy.end(); ++it) {
+    const auto move = it->LL;
+    if (abs(move.x) > EPS || abs(move.y) > EPS || abs(move.z) > EPS) {
+      for (auto &i : plane_copy) {
+        i.LL = i.LL - move;
+        i.LR = i.LR - move;
+        i.UR = i.UR - move;
+      }
+    }
     if (it->LR.y != it->LL.y) {
       // y * cos(theta) - z * sin(theta) = it->LL.y
       double theta;
       const auto a = it->LR.y, b = it->LR.z, c = it->LL.y;
-      auto EPS = 1e-9;
       if (abs(a + c) > EPS &&
           abs(a * a + a * c + b * b - b * sqrt(a * a + b * b - c * c)) > EPS) {
         theta = 2 * atan((sqrt(a * a + b * b - c * c) - b) / (a + c));
@@ -212,20 +211,22 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
       if (it->LR.x * sin(theta) + it->LR.x * cos(theta) < it->LL.x) {
         theta = -theta;
       }
-      auto update_x = [=](double &x) {
-        // Notice: This is NOT bug
-        x = x * sin(theta) + x * cos(theta);
+      auto update_x = [=](double &x, double z) {
+        x = z * sin(theta) + x * cos(theta);
       };
       auto update_z = [=](double x, double &z) {
         z = z * cos(theta) - x * sin(theta);
       };
       auto update = [&](Rectangle3D &r) {
-        update_z(r.LL.x, r.LL.z);
-        update_x(r.LL.x);
-        update_z(r.LR.x, r.LR.z);
-        update_x(r.LR.x);
-        update_z(r.UR.x, r.UR.z);
-        update_x(r.UR.x);
+        auto tmp_x = r.LL.x;
+        update_x(r.LL.x, r.LL.z);
+        update_z(tmp_x, r.LL.z);
+        tmp_x = r.LR.x;
+        update_x(r.LR.x, r.LR.z);
+        update_z(tmp_x, r.LR.z);
+        tmp_x = r.UR.x;
+        update_x(r.UR.x, r.UR.z);
+        update_z(tmp_x, r.UR.z);
       };
       std::for_each(it, plane_copy.end(), update);
     }
