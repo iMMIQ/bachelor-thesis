@@ -72,13 +72,6 @@ struct Rectangle3D {
   Point3D LR; // 右下
 };
 
-/** Unused
-struct Cube {
-  Rectangle bottom;
-  double bottom_z, height;
-};
-**/
-
 using Plane = vector<Rectangle3D>;
 
 using Path = vector<Point>;

@@ -242,8 +242,9 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
   auto [path, distance] = solve(rectangles, s, e);
   Path3D path3D(path.size());
   for (int i = 0; i < path.size(); ++i) {
+    // '&path = path' is an error of clang++
     auto tmp = std::find_if(rectangles.begin(), rectangles.end(),
-                            [&](const auto &r) {
+                            [&path = path, i = i](const auto &r) {
                               return isPointInsideRectangle(path[i], r);
                             }) -
                rectangles.begin();
