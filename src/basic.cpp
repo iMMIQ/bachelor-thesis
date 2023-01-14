@@ -22,9 +22,11 @@ using std::ranges::for_each;
 namespace Basic {
 auto solve(const vector<Rectangle> &rectangles, const Point &start,
            const Point &end) -> std::pair<Path, double> {
-  constexpr auto INF = std::numeric_limits<double>::max(), EPS = 1e-9;
-  int n = rectangles.size();
-  vector<double> L(n), R(n);
+  constexpr auto INF = std::numeric_limits<double>::max();
+  constexpr auto EPS = 1e-9;
+  const int n = rectangles.size();
+  vector<double> L(n);
+  vector<double> R(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
 
   for (int i = 0; i < n - 1; ++i) {
@@ -36,21 +38,21 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
   auto right_slope = INF;
   auto res = INF;
 
-  int start_rectangle = find_if(rectangles.begin(), rectangles.end(),
-                                [&start](const auto &r) {
-                                  return isPointInsideRectangle(start, r);
-                                }) -
-                        rectangles.begin();
+  const int start_rectangle = find_if(rectangles.begin(), rectangles.end(),
+                                      [&start](const auto &r) {
+                                        return isPointInsideRectangle(start, r);
+                                      }) -
+                              rectangles.begin();
   assert(start_rectangle < n);
 
-  int end_rectangle = find_if(rectangles.begin(), rectangles.end(),
-                              [&end](const auto &r) {
-                                return isPointInsideRectangle(end, r);
-                              }) -
-                      rectangles.begin();
+  const int end_rectangle = find_if(rectangles.begin(), rectangles.end(),
+                                    [&end](const auto &r) {
+                                      return isPointInsideRectangle(end, r);
+                                    }) -
+                            rectangles.begin();
   assert(end_rectangle < n);
 
-  Path path[2];
+  std::array<Path, 2> path;
   Path res_path;
 
   auto add_path = [&](Path &path, const Point &from, const Point &to) {
@@ -216,8 +218,11 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
 
     if (it->LR.y != it->LL.y) {
       // y * cos(theta) - z * sin(theta) = it->LL.y
-      double theta;
-      const auto a = it->LR.y, b = it->LR.z, c = it->LL.y;
+      double theta = NAN;
+      const auto a = it->LR.y;
+      const auto b = it->LR.z;
+      const auto c = it->LL.y;
+
       if (abs(a + c) > EPS &&
           abs(a * a + a * c + b * b - b * sqrt(a * a + b * b - c * c)) > EPS) {
         theta = 2 * atan((sqrt(a * a + b * b - c * c) - b) / (a + c));
@@ -282,22 +287,25 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
 
   auto move_point = [](const Point3D &p, const Rectangle3D &from,
                        const Rectangle3D &to) {
-    auto va = from.LL - from.LR, vb = from.UR - from.LR, vc = p - from.LR;
+    // a * A + b * B = C
+    auto A = from.LL - from.LR;
+    auto B = from.UR - from.LR;
+    auto C = p - from.LR;
 
-    auto a = (vc.x * vb.y - vb.x * vc.y) / (va.x * vb.y - vb.x * va.y);
+    auto a = (C.x * B.y - B.x * C.y) / (A.x * B.y - B.x * A.y);
     if (isnan(a)) {
-      a = (vc.y * vb.z - vb.y * vc.z) / (va.y * vb.z - vb.y * va.z);
+      a = (C.y * B.z - B.y * C.z) / (A.y * B.z - B.y * A.z);
     }
     if (isnan(a)) {
-      a = (vc.x * vb.z - vb.x * vc.z) / (va.x * vb.z - vb.x * va.z);
+      a = (C.x * B.z - B.x * C.z) / (A.x * B.z - B.x * A.z);
     }
 
-    auto b = (va.x * vc.y - vc.x * va.y) / (va.x * vb.y - vb.x * va.y);
+    auto b = (A.x * C.y - C.x * A.y) / (A.x * B.y - B.x * A.y);
     if (isnan(b)) {
-      b = (va.y * vc.z - vc.y * va.z) / (va.y * vb.z - vb.y * va.z);
+      b = (A.y * C.z - C.y * A.z) / (A.y * B.z - B.y * A.z);
     }
     if (isnan(b)) {
-      b = (va.x * vc.z - vc.x * va.z) / (va.x * vb.z - vb.x * va.z);
+      b = (A.x * C.z - C.x * A.z) / (A.x * B.z - B.x * A.z);
     }
 
     return (to.LL - to.LR) * a + (to.UR - to.LR) * b + to.LR;
