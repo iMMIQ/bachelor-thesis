@@ -283,6 +283,30 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
 
       for_each(it, plane_copy.end(), update);
     }
+
+    if (it->UR.z != 0) {
+      auto theta = atan(it->UR.z / it->UR.y);
+
+      auto update_y = [=](double &y, double z) {
+        y = y * cos(theta) - z * sin(theta);
+      };
+      auto update_z = [=](double y, double &z) {
+        z = y * sin(theta) + z * cos(theta);
+      };
+      auto update = [&](Rectangle3D &r) {
+        auto tmp_y = r.LL.y;
+        update_y(r.LL.y, r.LL.z);
+        update_z(tmp_y, r.LL.z);
+        tmp_y = r.LR.y;
+        update_y(r.LR.y, r.LR.z);
+        update_z(tmp_y, r.LR.z);
+        tmp_y = r.UR.y;
+        update_y(r.UR.y, r.UR.z);
+        update_z(tmp_y, r.UR.z);
+      };
+
+      for_each(it, plane_copy.end(), update);
+    }
   }
 
   auto move_point = [](const Point3D &p, const Rectangle3D &from,
