@@ -72,7 +72,8 @@ struct Rectangle3D {
   Point3D LR; // 右下
 };
 
-using Plane = vector<Rectangle3D>;
+using Rectangle3DList = vector<Rectangle3D>;
+using Plane = Rectangle3DList;
 
 using Path = vector<Point>;
 using Path3D = vector<Point3D>;
