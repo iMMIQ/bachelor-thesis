@@ -3,7 +3,14 @@
 #include <queue>
 #include <random>
 
+#include <boost/geometry/algorithms/detail/equals/interface.hpp>
+
 #include "basic.h"
+
+using Basic::cross;
+using Basic::dot;
+
+using bg::distance;
 
 namespace {
 struct DijkstraNode {
@@ -18,34 +25,71 @@ struct PointWithRectangleIndex {
   int r;
 };
 
-auto isEdgeOverlap(Point3D p1, Point3D q1, Point3D p2, Point3D q2) -> bool {
-  const auto d1 = q1 - p1;
-  const auto d2 = q2 - p2;
+auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
+  auto dir1 = l1.second - l1.first;
+  auto dir2 = l2.second - l2.first;
+  auto c = cross(dir1, dir2);
+  return bg::equals(c, Point3D());
+}
 
-  auto n = Basic::cross(d1, d2);
-  auto dist = Basic::dot((p2 - p1), n) / Basic::dot(d1, n);
+auto arePointsCollinear(const Point3D &p1, const Point3D &p2, const Point3D &p3,
+                        const Point3D &p4) -> bool {
+  return bg::equals(cross(p2 - p1, p3 - p1), Point3D()) &&
+         bg::equals(cross(p2 - p1, p4 - p1), Point3D());
+}
 
-  if (const auto cross = Basic::cross(d1, d2);
-      std::hypot(cross.x, cross.y, cross.z) < Basic::EPS) {
-    if (Basic::dot((p2 - p1), d1) < 0 || Basic::dot((p2 - q1), d1) > 0 ||
-        Basic::dot((q2 - p1), d1) < 0 || Basic::dot((q2 - q1), d1) > 0 ||
-        Basic::dot((p1 - p2), d2) < 0 || Basic::dot((p1 - q2), d2) > 0 ||
-        Basic::dot((q1 - p2), d2) < 0 || Basic::dot((q1 - q2), d2) > 0) {
-      return false;
-    }
-    return true;
+auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
+  if (!arePointsCollinear(l1.first, l1.second, l2.first, l2.second) ||
+      bg::equals(l1.first, l1.second) || bg::equals(l2.first, l2.second)) {
+    return {};
   }
-  return false;
+
+  vector<Point3D> overlaps_points;
+  for (const auto &p : {l1.first, l1.second, l2.first, l2.second}) {
+    auto k = (p.x - l1.first.x) / (l1.second.x - l1.first.x);
+    if (std::isnan(k)) {
+      k = (p.y - l1.first.y) / (l1.second.y - l1.first.y);
+    }
+    if (std::isnan(k)) {
+      k = (p.z - l1.first.z) / (l1.second.z - l1.first.z);
+    }
+    if (k > -Basic::EPS && k < 1 + Basic::EPS) {
+      k = (p.x - l2.first.x) / (l2.second.x - l2.first.x);
+      if (std::isnan(k)) {
+        k = (p.y - l2.first.y) / (l2.second.y - l2.first.y);
+      }
+      if (std::isnan(k)) {
+        k = (p.z - l2.first.z) / (l2.second.z - l2.first.z);
+      }
+      if (k > -Basic::EPS && k < 1 + Basic::EPS) {
+        overlaps_points.emplace_back(p);
+      }
+    }
+  }
+
+  if (overlaps_points.size() > 1) {
+    return {overlaps_points[0], overlaps_points[1]};
+  } else {
+    return {};
+  }
 }
 
 auto isRectangleOverlap(const Rectangle3D &r1, const Rectangle3D &r2) -> bool {
   std::array<Point3D, 4> points1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR},
       points2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
 
+  auto isEdgeOverlap = [](const Point3D &p1, const Point3D &q1,
+                          const Point3D &p2, const Point3D &q2) {
+    auto line = calcOverlapLine(Line3D(p1, q1), Line3D(p2, q2));
+    return distance(line.first, line.second) > Basic::EPS;
+  };
+
   for (int i = 0; i < 4; ++i) {
-    if (isEdgeOverlap(points1[i], points1[(i + 1) % 4], points2[i],
-                      points2[(i + 1) % 4])) {
-      return true;
+    for (int j = 0; j < 4; ++j) {
+      if (isEdgeOverlap(points1[i], points1[(i + 1) % 4], points2[j],
+                        points2[(j + 1) % 4])) {
+        return true;
+      }
     }
   }
   return false;
@@ -74,8 +118,9 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
     vis[id] = true;
 
     for (int i = 0; i < pris.size(); ++i) {
-      if (isRectangleOverlap(list[pris[i].r], list[pris[id].r])) {
-        if (const auto tmp = Basic::distance(pris[i].p, pris[id].p);
+      if (pris[i].r == pris[id].r ||
+          isRectangleOverlap(list[pris[i].r], list[pris[id].r])) {
+        if (const auto tmp = distance(pris[i].p, pris[id].p);
             dis[i] > dis[id] + tmp) {
           dis[i] = dis[id] + tmp;
           prev[i] = id;
@@ -93,7 +138,7 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
   std::reverse(path.begin(), path.end());
   return path;
 }
-}; // namespace
+} // namespace
 
 inline auto find_path(const Rectangle3DList &list, const Point3D &start,
                       const Point3D &end) {
@@ -105,9 +150,8 @@ inline auto find_path(const Rectangle3DList &list, const Point3D &start,
 
   for (int i = 0; i < list.size(); ++i) {
     const auto &r = list[i];
-    for (int j = 0; j < Basic::distance(r.LL, r.LR) *
-                            Basic::distance(r.LR, r.UR) / block_size;
-         ++j) {
+    for (int j = 0;
+         j < distance(r.LL, r.LR) * distance(r.LR, r.UR) / block_size; ++j) {
       const auto x = dist(rng), y = dist(rng);
       const auto point = (r.LL - r.LR) * x + (r.UR - r.LR) * y + r.LR;
       points.push_back({point, i});
@@ -138,5 +182,10 @@ inline auto find_path(const Rectangle3DList &list, const Point3D &start,
     indexs.push_back(pointToRectangleIndex[i]);
   }
   indexs.push_back(end_rectangle);
+
+  std::pair<Point3D, Point3D> last_line;
+  int last_rect_index = -1;
+  for (auto i : indexs) {
+  }
   return indexs;
 }

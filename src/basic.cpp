@@ -3,7 +3,6 @@
 #include <bits/ranges_algo.h>
 #include <cassert>
 #include <cmath>
-#include <iostream>
 #include <limits>
 
 #include "basic.h"
@@ -19,11 +18,12 @@ using std::sqrt;
 using std::ranges::find_if;
 using std::ranges::for_each;
 
+using bg::distance;
+
 namespace Basic {
 auto solve(const vector<Rectangle> &rectangles, const Point &start,
            const Point &end) -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max();
-  constexpr auto EPS = 1e-9;
   const int n = rectangles.size();
   vector<double> L(n);
   vector<double> R(n);
@@ -56,10 +56,10 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
   Path res_path;
 
   auto add_path = [&](Path &path, const Point &from, const Point &to) {
-    auto from_rectangle =
+    std::input_iterator auto from_rectangle =
         find_if(rectangles.begin(), rectangles.end(),
                 [&](const auto &r) { return isPointInsideRectangle(from, r); });
-    auto to_rectangle =
+    std::input_iterator auto to_rectangle =
         find_if(rectangles.begin(), rectangles.end(),
                 [&](const auto &r) { return isPointInsideRectangle(to, r); });
     if (from_rectangle->UR.x != from.x) {
@@ -69,17 +69,17 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
       const auto [x1, y1] = from;
       const auto [x2, y2] = to;
       const auto x = r.UR.x;
-      path.push_back({x, (x - x2) / (x1 - x2) * (y1 - y2) + y2});
+      path.push_back(Point(x, (x - x2) / (x1 - x2) * (y1 - y2) + y2));
     });
     path.emplace_back(to);
   };
 
   for (int i = start_rectangle; i < end_rectangle; ++i) {
     if (i == start_rectangle && abs(start.x - rectangles[i].UR.x) < EPS) {
-      dp[i][0] = distance(start, {rectangles[i].UR.x, L[i]});
-      add_path(path[0], start, {rectangles[i].UR.x, L[i]});
-      dp[i][1] = distance(start, {rectangles[i].UR.x, R[i]});
-      add_path(path[1], start, {rectangles[i].UR.x, R[i]});
+      dp[i][0] = distance(start, Point(rectangles[i].UR.x, L[i]));
+      add_path(path[0], start, Point(rectangles[i].UR.x, L[i]));
+      dp[i][1] = distance(start, Point(rectangles[i].UR.x, R[i]));
+      add_path(path[1], start, Point(rectangles[i].UR.x, R[i]));
       if (start.y - rectangles[i].LL.y < EPS ||
           rectangles[i].UR.y - start.y < EPS) {
         left_slope = INF, right_slope = -INF;
@@ -87,16 +87,16 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
       }
     }
 
-    auto l = calc_slope(start, {rectangles[i].UR.x, L[i]});
-    auto r = calc_slope(start, {rectangles[i].UR.x, R[i]});
+    auto l = calc_slope(start, Point(rectangles[i].UR.x, L[i]));
+    auto r = calc_slope(start, Point(rectangles[i].UR.x, R[i]));
 
     if (left_slope < l + EPS && right_slope + EPS > l) {
-      dp[i][0] = distance(start, {rectangles[i].UR.x, L[i]});
-      add_path(path[0], start, {rectangles[i].UR.x, L[i]});
+      dp[i][0] = distance(start, Point(rectangles[i].UR.x, L[i]));
+      add_path(path[0], start, Point(rectangles[i].UR.x, L[i]));
     }
     if (left_slope < r + EPS && right_slope + EPS > r) {
-      dp[i][1] = distance(start, {rectangles[i].UR.x, R[i]});
-      add_path(path[1], start, {rectangles[i].UR.x, R[i]});
+      dp[i][1] = distance(start, Point(rectangles[i].UR.x, R[i]));
+      add_path(path[1], start, Point(rectangles[i].UR.x, R[i]));
     }
 
     left_slope = max(left_slope, l), right_slope = min(right_slope, r);
@@ -115,11 +115,11 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
     auto tmp = length + distance(from, to);
     if (dp_value > tmp) {
       dp_value = tmp;
-      if (auto it = find_if(path[index].begin(), path[index].end(),
-                            [&](const auto &p) {
-                              return abs(p.x - from.x) < EPS &&
-                                     abs(p.y - from.y) < EPS;
-                            });
+      if (std::input_iterator auto it = find_if(
+              path[index].begin(), path[index].end(),
+              [&](const auto &p) {
+                return abs(p.x - from.x) < EPS && abs(p.y - from.y) < EPS;
+              });
           it != path[index].end()) {
         path[index].erase(it, path[index].end());
         add_path(path[index], from, to);
@@ -132,7 +132,7 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
     auto tmp = length + distance(from, end);
     if (res > tmp) {
       res = tmp;
-      auto it =
+      std::input_iterator auto it =
           find_if(path[index].begin(), path[index].end(), [&](const auto &p) {
             return abs(p.x - from.x) < EPS && abs(p.y - from.y) < EPS;
           });
@@ -148,31 +148,33 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
     auto right_k2 = INF;
 
     for (int j = i + 1; j < end_rectangle; ++j) {
-      auto l =
-          calc_slope({rectangles[i].UR.x, L[i]}, {rectangles[j].UR.x, L[j]});
-      auto r =
-          calc_slope({rectangles[i].UR.x, L[i]}, {rectangles[j].UR.x, R[j]});
+      auto l = calc_slope(Point(rectangles[i].UR.x, L[i]),
+                          Point(rectangles[j].UR.x, L[j]));
+      auto r = calc_slope(Point(rectangles[i].UR.x, L[i]),
+                          Point(rectangles[j].UR.x, R[j]));
 
       if (left_k1 < l + EPS && right_k1 + EPS > l) {
-        update_dp(dp[j][0], dp[i][0], {rectangles[i].UR.x, L[i]},
-                  {rectangles[j].UR.x, L[j]}, 0);
+        update_dp(dp[j][0], dp[i][0], Point(rectangles[i].UR.x, L[i]),
+                  Point(rectangles[j].UR.x, L[j]), 0);
       }
       if (left_k1 < r + EPS && right_k1 + EPS > r) {
-        update_dp(dp[j][1], dp[i][0], {rectangles[i].UR.x, L[i]},
-                  {rectangles[j].UR.x, R[j]}, 1);
+        update_dp(dp[j][1], dp[i][0], Point(rectangles[i].UR.x, L[i]),
+                  Point(rectangles[j].UR.x, R[j]), 1);
       }
       left_k1 = max(left_k1, l), right_k1 = min(right_k1, r);
 
-      l = calc_slope({rectangles[i].UR.x, R[i]}, {rectangles[j].UR.x, L[j]}),
-      r = calc_slope({rectangles[i].UR.x, R[i]}, {rectangles[j].UR.x, R[j]});
+      l = calc_slope(Point(rectangles[i].UR.x, R[i]),
+                     Point(rectangles[j].UR.x, L[j])),
+      r = calc_slope(Point(rectangles[i].UR.x, R[i]),
+                     Point(rectangles[j].UR.x, R[j]));
 
       if (left_k2 < l + EPS && right_k2 + EPS > l) {
-        update_dp(dp[j][0], dp[i][1], {rectangles[i].UR.x, R[i]},
-                  {rectangles[j].UR.x, L[j]}, 0);
+        update_dp(dp[j][0], dp[i][1], Point(rectangles[i].UR.x, R[i]),
+                  Point(rectangles[j].UR.x, L[j]), 0);
       }
       if (left_k2 < r + EPS && right_k2 + EPS > r) {
-        update_dp(dp[j][1], dp[i][1], {rectangles[i].UR.x, R[i]},
-                  {rectangles[j].UR.x, R[j]}, 1);
+        update_dp(dp[j][1], dp[i][1], Point(rectangles[i].UR.x, R[i]),
+                  Point(rectangles[j].UR.x, R[j]), 1);
       }
       left_k2 = max(left_k2, l), right_k2 = min(right_k2, r);
     }
@@ -184,19 +186,19 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
         continue;
       }
 
-      update_res(res, dp[i][0], {rectangles[i].UR.x, L[i]}, 0);
-      update_res(res, dp[i][1], {rectangles[i].UR.x, R[i]}, 1);
+      update_res(res, dp[i][0], Point(rectangles[i].UR.x, L[i]), 0);
+      update_res(res, dp[i][1], Point(rectangles[i].UR.x, R[i]), 1);
       continue;
     }
 
-    auto l = calc_slope({rectangles[i].UR.x, L[i]}, end);
-    auto r = calc_slope({rectangles[i].UR.x, R[i]}, end);
+    auto l = calc_slope(Point(rectangles[i].UR.x, L[i]), end);
+    auto r = calc_slope(Point(rectangles[i].UR.x, R[i]), end);
 
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
-      update_res(res, dp[i][0], {rectangles[i].UR.x, L[i]}, 0);
+      update_res(res, dp[i][0], Point(rectangles[i].UR.x, L[i]), 0);
     }
     if (left_k2 < r + EPS && right_k2 + EPS > r) {
-      update_res(res, dp[i][1], {rectangles[i].UR.x, R[i]}, 1);
+      update_res(res, dp[i][1], Point(rectangles[i].UR.x, R[i]), 1);
     }
   }
   return {res_path, res};
@@ -352,12 +354,12 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
 
   vector<Rectangle> rectangles(plane.size());
   for (int i = 0; i < plane.size(); ++i) {
-    rectangles[i] = {{plane_copy[i].LL.x, plane_copy[i].LL.y},
-                     {plane_copy[i].UR.x, plane_copy[i].UR.y}};
+    rectangles[i] = {Point(plane_copy[i].LL.x, plane_copy[i].LL.y),
+                     Point(plane_copy[i].UR.x, plane_copy[i].UR.y)};
   }
 
-  const Point s = {start_copy.x, start_copy.y};
-  const Point e = {end_copy.x, end_copy.y};
+  const auto s = Point(start_copy.x, start_copy.y);
+  const auto e = Point(end_copy.x, end_copy.y);
 
   auto [path, distance] = solve(rectangles, s, e);
 
@@ -369,8 +371,8 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
                          return isPointInsideRectangle(path[i], r);
                        }) -
                rectangles.begin();
-    path3D[i] =
-        move_point({path[i].x, path[i].y, 0}, plane_copy[tmp], plane[tmp]);
+    path3D[i] = move_point(Point3D(path[i].x, path[i].y, 0), plane_copy[tmp],
+                           plane[tmp]);
   }
 
   return {path3D, distance};

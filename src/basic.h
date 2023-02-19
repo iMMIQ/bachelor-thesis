@@ -1,29 +1,15 @@
 #include <cmath>
 
+#include <boost/geometry/algorithms/detail/distance/interface.hpp>
+#include <boost/geometry/arithmetic/cross_product.hpp>
+#include <boost/geometry/arithmetic/dot_product.hpp>
+
 #include "data.h"
+
+using bg::distance;
 
 namespace Basic {
 constexpr auto EPS = 1e-9;
-
-/**
- * @brief Compute the distance between two 2D points
- * @param a The first point
- * @param b The second point
- * @return The distance between the two points
- */
-inline auto distance(const Point &a, const Point &b) -> double {
-  return std::hypot(a.x - b.x, a.y - b.y);
-}
-
-/**
- * @brief Compute the distance between two 3D points
- * @param a The first point
- * @param b The second point
- * @return The distance between the two points
- */
-inline auto distance(const Point3D &a, const Point3D &b) -> double {
-  return std::hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-}
 
 /**
  * @brief Compute the dot product of two 3D points
@@ -32,7 +18,7 @@ inline auto distance(const Point3D &a, const Point3D &b) -> double {
  * @return The dot product of the two points
  */
 inline auto dot(const Point3D &a, const Point3D &b) -> double {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
+  return bg::dot_product(a, b);
 }
 
 /**
@@ -42,7 +28,7 @@ inline auto dot(const Point3D &a, const Point3D &b) -> double {
  * @return The cross product of the two points
  */
 inline auto cross(const Point3D &a, const Point3D &b) -> Point3D {
-  return {a.y * b.z - b.y * a.z, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+  return bg::cross_product(a, b);
 }
 
 /**
@@ -59,7 +45,7 @@ inline auto isCoplanar(const Point3D &a, const Point3D &b, const Point3D &c,
   auto p2 = a - c;
   auto p3 = a - d;
   return std::abs(dot(p1, cross(p2, p3))) < 1e-9;
-};
+}
 
 /**
  * @brief Project a 3D point onto a 3D line
@@ -67,16 +53,16 @@ inline auto isCoplanar(const Point3D &a, const Point3D &b, const Point3D &c,
  * @param line The line to project onto
  * @return The projection of the point onto the line
  */
-inline auto point_projection(const Point3D &a, const Line &line)
-    -> const Point3D {
-  const auto [x0, y0, z0] = a;
-  const auto [x1, y1, z1] = line.p1;
-  const auto [x2, y2, z2] = line.p2;
+inline auto point_projection(const Point3D &p, const Line3D &line) -> Point3D {
+  const auto [x0, y0, z0] = p;
+  const auto [x1, y1, z1] = line.first;
+  const auto [x2, y2, z2] = line.second;
   const auto k =
       -((x1 - x0) * (x2 - x1) + (y1 - y0) * (y2 - y1) + (z1 - z0) * (z2 - z1)) /
       ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1));
-  return {std::lerp(x1, x2, k), std::lerp(y1, y2, k), std::lerp(z1, z2, k)};
-};
+  return Point3D(std::lerp(x1, x2, k), std::lerp(y1, y2, k),
+                 std::lerp(z1, z2, k));
+}
 
 /**
  * @brief Check if a 2D point is inside a rectangle
@@ -87,7 +73,7 @@ inline auto point_projection(const Point3D &a, const Line &line)
 inline auto isPointInsideRectangle(const Point &p, const Rectangle &r) -> bool {
   return p.x >= r.LL.x - EPS && p.x <= r.UR.x + EPS && p.y >= r.LL.y - EPS &&
          p.y <= r.UR.y + EPS;
-};
+}
 
 /**
  * @brief Check if a 3D point is inside a 3D rectangle
@@ -97,7 +83,6 @@ inline auto isPointInsideRectangle(const Point &p, const Rectangle &r) -> bool {
  */
 inline auto isPointInsideRectangle3D(const Point3D &p, const Rectangle3D &r)
     -> bool {
-  constexpr auto EPS = 1e-9;
   if (isCoplanar(r.LL, r.LR, r.UR, p)) {
     const auto p1 = point_projection(p, {r.LR, r.LL});
     const auto p2 = point_projection(p, {r.LR, r.UR});
@@ -107,7 +92,7 @@ inline auto isPointInsideRectangle3D(const Point3D &p, const Rectangle3D &r)
                     distance(r.UR, r.LR)) < EPS;
   }
   return false;
-};
+}
 
 /**
  * @brief Compute the slope of a line defined by two 2D points

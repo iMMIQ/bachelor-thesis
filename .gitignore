@@ -36,6 +36,7 @@
 
 # build folders
 build*/
+cmake-build-*/
 
 # IDE folders
 .vscode/
