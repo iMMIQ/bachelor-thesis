@@ -74,7 +74,8 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
   }
 }
 
-auto isRectangleOverlap(const Rectangle3D &r1, const Rectangle3D &r2) -> bool {
+auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
+    -> Line3D {
   std::array<Point3D, 4> points1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR},
       points2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
 
@@ -88,11 +89,12 @@ auto isRectangleOverlap(const Rectangle3D &r1, const Rectangle3D &r2) -> bool {
     for (int j = 0; j < 4; ++j) {
       if (isEdgeOverlap(points1[i], points1[(i + 1) % 4], points2[j],
                         points2[(j + 1) % 4])) {
-        return true;
+        return calcOverlapLine(Line3D(points1[i], points1[(i + 1) % 4]),
+                               Line3D(points2[j], points2[(j + 1) % 4]));
       }
     }
   }
-  return false;
+  return {};
 }
 
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
@@ -108,6 +110,11 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
 
   dis[START] = 0;
   pq.push({START, 0});
+
+  auto isRectangleOverlap = [](const Rectangle3D &r1, const Rectangle3D &r2) {
+    auto line = calcOverlapRectangle(r1, r2);
+    return distance(line.first, line.second) > Basic::EPS;
+  };
 
   while (!pq.empty()) {
     const auto id = pq.top().id;
@@ -138,10 +145,10 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
   std::reverse(path.begin(), path.end());
   return path;
 }
-} // namespace
 
-inline auto find_path(const Rectangle3DList &list, const Point3D &start,
-                      const Point3D &end) {
+inline auto find_rectangle_indexs(const Rectangle3DList &list,
+                                  const Point3D &start, const Point3D &end)
+    -> vector<int> {
   constexpr auto block_size = 1.0;
   std::mt19937_64 rng{std::random_device{}()};
   std::uniform_real_distribution<double> dist{0.0, 1.0};
@@ -173,19 +180,40 @@ inline auto find_path(const Rectangle3DList &list, const Point3D &start,
                            }) -
       list.begin();
 
-  points.push_back({start, start_rectangle});
+  points.emplace_back(start, start_rectangle);
   points.push_back({end, end_rectangle});
 
   const auto path = Dijkstra(points, list);
   vector<int> indexs{start_rectangle};
   for (const auto i : path) {
-    indexs.push_back(pointToRectangleIndex[i]);
+    indexs.emplace_back(pointToRectangleIndex[i]);
   }
-  indexs.push_back(end_rectangle);
+  indexs.emplace_back(end_rectangle);
+  return indexs;
+}
+} // namespace
 
-  std::pair<Point3D, Point3D> last_line;
-  int last_rect_index = -1;
-  for (auto i : indexs) {
+inline auto find_path(const Rectangle3DList &list, const Point3D &start,
+                      const Point3D &end) {
+  auto indexs = find_rectangle_indexs(list, start, end);
+  vector<vector<int>> rectangles;
+  vector<Line3D> lines;
+  for (int i = 0; i < indexs.size(); ++i) {
+    vector<int> rects{indexs[i]};
+    Line3D line;
+    for (++i; i < indexs.size(); ++i) {
+      if (auto overlap_line =
+              calcOverlapRectangle(list[rects.back()], list[indexs[i]]);
+          isParallel(line, overlap_line)) {
+        line = overlap_line;
+        rects.emplace_back(indexs[i]);
+      } else {
+        lines.emplace_back(overlap_line);
+        i--;
+        break;
+      }
+    }
+    rectangles.emplace_back(rects);
   }
   return indexs;
 }
