@@ -25,13 +25,13 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
            const Point &end) -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max();
   const int n = rectangles.size();
-  vector<double> L(n);
-  vector<double> R(n);
+  vector<double> LOW(n);
+  vector<double> HIGH(n);
   vector<std::array<double, 2>> dp(n + 1, {INF, INF});
 
   for (int i = 0; i < n - 1; ++i) {
-    L[i] = max(rectangles[i].LL.y, rectangles[i + 1].LL.y);
-    R[i] = min(rectangles[i].UR.y, rectangles[i + 1].UR.y);
+    LOW[i] = max(rectangles[i].LL.y, rectangles[i + 1].LL.y);
+    HIGH[i] = min(rectangles[i].UR.y, rectangles[i + 1].UR.y);
   }
 
   auto left_slope = -INF;
@@ -76,10 +76,10 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
 
   for (int i = start_rectangle; i < end_rectangle; ++i) {
     if (i == start_rectangle && abs(start.x - rectangles[i].UR.x) < EPS) {
-      dp[i][0] = distance(start, Point(rectangles[i].UR.x, L[i]));
-      add_path(path[0], start, Point(rectangles[i].UR.x, L[i]));
-      dp[i][1] = distance(start, Point(rectangles[i].UR.x, R[i]));
-      add_path(path[1], start, Point(rectangles[i].UR.x, R[i]));
+      dp[i][0] = distance(start, Point(rectangles[i].UR.x, LOW[i]));
+      add_path(path[0], start, Point(rectangles[i].UR.x, LOW[i]));
+      dp[i][1] = distance(start, Point(rectangles[i].UR.x, HIGH[i]));
+      add_path(path[1], start, Point(rectangles[i].UR.x, HIGH[i]));
       if (start.y - rectangles[i].LL.y < EPS ||
           rectangles[i].UR.y - start.y < EPS) {
         left_slope = INF, right_slope = -INF;
@@ -87,16 +87,16 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
       }
     }
 
-    auto l = calc_slope(start, Point(rectangles[i].UR.x, L[i]));
-    auto r = calc_slope(start, Point(rectangles[i].UR.x, R[i]));
+    auto l = calc_slope(start, Point(rectangles[i].UR.x, LOW[i]));
+    auto r = calc_slope(start, Point(rectangles[i].UR.x, HIGH[i]));
 
     if (left_slope < l + EPS && right_slope + EPS > l) {
-      dp[i][0] = distance(start, Point(rectangles[i].UR.x, L[i]));
-      add_path(path[0], start, Point(rectangles[i].UR.x, L[i]));
+      dp[i][0] = distance(start, Point(rectangles[i].UR.x, LOW[i]));
+      add_path(path[0], start, Point(rectangles[i].UR.x, LOW[i]));
     }
     if (left_slope < r + EPS && right_slope + EPS > r) {
-      dp[i][1] = distance(start, Point(rectangles[i].UR.x, R[i]));
-      add_path(path[1], start, Point(rectangles[i].UR.x, R[i]));
+      dp[i][1] = distance(start, Point(rectangles[i].UR.x, HIGH[i]));
+      add_path(path[1], start, Point(rectangles[i].UR.x, HIGH[i]));
     }
 
     left_slope = max(left_slope, l), right_slope = min(right_slope, r);
@@ -148,33 +148,33 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
     auto right_k2 = INF;
 
     for (int j = i + 1; j < end_rectangle; ++j) {
-      auto l = calc_slope(Point(rectangles[i].UR.x, L[i]),
-                          Point(rectangles[j].UR.x, L[j]));
-      auto r = calc_slope(Point(rectangles[i].UR.x, L[i]),
-                          Point(rectangles[j].UR.x, R[j]));
+      auto l = calc_slope(Point(rectangles[i].UR.x, LOW[i]),
+                          Point(rectangles[j].UR.x, LOW[j]));
+      auto r = calc_slope(Point(rectangles[i].UR.x, LOW[i]),
+                          Point(rectangles[j].UR.x, HIGH[j]));
 
       if (left_k1 < l + EPS && right_k1 + EPS > l) {
-        update_dp(dp[j][0], dp[i][0], Point(rectangles[i].UR.x, L[i]),
-                  Point(rectangles[j].UR.x, L[j]), 0);
+        update_dp(dp[j][0], dp[i][0], Point(rectangles[i].UR.x, LOW[i]),
+                  Point(rectangles[j].UR.x, LOW[j]), 0);
       }
       if (left_k1 < r + EPS && right_k1 + EPS > r) {
-        update_dp(dp[j][1], dp[i][0], Point(rectangles[i].UR.x, L[i]),
-                  Point(rectangles[j].UR.x, R[j]), 1);
+        update_dp(dp[j][1], dp[i][0], Point(rectangles[i].UR.x, LOW[i]),
+                  Point(rectangles[j].UR.x, HIGH[j]), 1);
       }
       left_k1 = max(left_k1, l), right_k1 = min(right_k1, r);
 
-      l = calc_slope(Point(rectangles[i].UR.x, R[i]),
-                     Point(rectangles[j].UR.x, L[j])),
-      r = calc_slope(Point(rectangles[i].UR.x, R[i]),
-                     Point(rectangles[j].UR.x, R[j]));
+      l = calc_slope(Point(rectangles[i].UR.x, HIGH[i]),
+                     Point(rectangles[j].UR.x, LOW[j])),
+      r = calc_slope(Point(rectangles[i].UR.x, HIGH[i]),
+                     Point(rectangles[j].UR.x, HIGH[j]));
 
       if (left_k2 < l + EPS && right_k2 + EPS > l) {
-        update_dp(dp[j][0], dp[i][1], Point(rectangles[i].UR.x, R[i]),
-                  Point(rectangles[j].UR.x, L[j]), 0);
+        update_dp(dp[j][0], dp[i][1], Point(rectangles[i].UR.x, HIGH[i]),
+                  Point(rectangles[j].UR.x, LOW[j]), 0);
       }
       if (left_k2 < r + EPS && right_k2 + EPS > r) {
-        update_dp(dp[j][1], dp[i][1], Point(rectangles[i].UR.x, R[i]),
-                  Point(rectangles[j].UR.x, R[j]), 1);
+        update_dp(dp[j][1], dp[i][1], Point(rectangles[i].UR.x, HIGH[i]),
+                  Point(rectangles[j].UR.x, HIGH[j]), 1);
       }
       left_k2 = max(left_k2, l), right_k2 = min(right_k2, r);
     }
@@ -186,19 +186,19 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
         continue;
       }
 
-      update_res(res, dp[i][0], Point(rectangles[i].UR.x, L[i]), 0);
-      update_res(res, dp[i][1], Point(rectangles[i].UR.x, R[i]), 1);
+      update_res(res, dp[i][0], Point(rectangles[i].UR.x, LOW[i]), 0);
+      update_res(res, dp[i][1], Point(rectangles[i].UR.x, HIGH[i]), 1);
       continue;
     }
 
-    auto l = calc_slope(Point(rectangles[i].UR.x, L[i]), end);
-    auto r = calc_slope(Point(rectangles[i].UR.x, R[i]), end);
+    auto l = calc_slope(Point(rectangles[i].UR.x, LOW[i]), end);
+    auto r = calc_slope(Point(rectangles[i].UR.x, HIGH[i]), end);
 
     if (left_k1 < l + EPS && right_k1 + EPS > l) {
-      update_res(res, dp[i][0], Point(rectangles[i].UR.x, L[i]), 0);
+      update_res(res, dp[i][0], Point(rectangles[i].UR.x, LOW[i]), 0);
     }
     if (left_k2 < r + EPS && right_k2 + EPS > r) {
-      update_res(res, dp[i][1], Point(rectangles[i].UR.x, R[i]), 1);
+      update_res(res, dp[i][1], Point(rectangles[i].UR.x, HIGH[i]), 1);
     }
   }
   return {res_path, res};
