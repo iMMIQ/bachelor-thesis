@@ -216,7 +216,7 @@ auto calc_path(const Rectangle3DList &list,
           rects,
           lerp_point3D(lines[i - 1].first, lines[i - 1].second, input[i - 1]),
           lerp_point3D(lines[i].first, lines[i].second, input[i]));
-      for_each(tmp_path.begin(), tmp_path.end(),
+      for_each(tmp_path.begin() + 1, tmp_path.end(),
                [&](auto &p) { path.emplace_back(p); });
       dis += tmp_dis;
     }
@@ -227,17 +227,57 @@ auto calc_path(const Rectangle3DList &list,
           rects,
           lerp_point3D(lines.back().first, lines.back().second, input.back()),
           end);
-      for_each(tmp_path.begin(), tmp_path.end(),
+      for_each(tmp_path.begin() + 1, tmp_path.end(),
                [&](auto &p) { path.emplace_back(p); });
       dis += tmp_dis;
     }
     return {path, dis};
   }
 }
+
+auto simulated_annealing(const Rectangle3DList &list,
+                         const vector<vector<int>> &rectangles,
+                         const Point3D &start, const Point3D &end,
+                         const vector<Line3D> &lines, int iterations,
+                         double initial_temp, double cooling_rate)
+    -> vector<double> {
+  auto n = lines.size();
+  vector<double> current(n, 0.5);
+
+  auto current_energy =
+      calc_path(list, rectangles, start, end, lines, current).second;
+  auto best = current;
+  auto best_energy = current_energy;
+
+  std::mt19937_64 rng{std::random_device{}()};
+
+  for (int i = 0; i < iterations; ++i) {
+    auto new_solution = current;
+    int index = rng() % n;
+    new_solution[index] = rand_0_to_1();
+
+    auto new_energy =
+        calc_path(list, rectangles, start, end, lines, new_solution).second;
+
+    auto energy_diff = new_energy - current_energy;
+    auto temp = initial_temp * pow(cooling_rate, i);
+
+    if (energy_diff < 0 || exp(-energy_diff / temp) > rand_0_to_1()) {
+      current = new_solution;
+      current_energy = new_energy;
+    }
+
+    if (current_energy < best_energy) {
+      best = current;
+      best_energy = current_energy;
+    }
+  }
+  return best;
+}
 } // namespace
 
 auto find_path(const Rectangle3DList &list, const Point3D &start,
-               const Point3D &end) -> vector<int> {
+               const Point3D &end) -> std::pair<Path3D, double> {
   auto indexs = find_rectangle_indexs(list, start, end);
   vector<vector<int>> rectangles;
   vector<Line3D> lines;
@@ -258,5 +298,10 @@ auto find_path(const Rectangle3DList &list, const Point3D &start,
     }
     rectangles.emplace_back(rects);
   }
-  return indexs;
+  if (lines.empty()) {
+    return Basic::solve3D(list, start, end);
+  }
+  auto tmp = simulated_annealing(list, rectangles, start, end, lines, 10000,
+                                 1.0, 0.999);
+  return calc_path(list, rectangles, start, end, lines, tmp);
 }
