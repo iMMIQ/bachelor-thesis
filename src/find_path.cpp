@@ -1,11 +1,10 @@
-#include <bits/ranges_algo.h>
 #include <map>
 #include <queue>
 #include <random>
 
 #include <boost/geometry/algorithms/detail/equals/interface.hpp>
 
-#include "basic.h"
+#include "find_path.h"
 
 using Basic::cross;
 using Basic::dot;
@@ -13,18 +12,6 @@ using Basic::dot;
 using bg::distance;
 
 namespace {
-struct DijkstraNode {
-  int id;
-  double dis;
-
-  bool operator<(const DijkstraNode &rhs) const { return dis > rhs.dis; }
-};
-
-struct PointWithRectangleIndex {
-  Point3D p;
-  int r;
-};
-
 auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
   auto dir1 = l1.second - l1.first;
   auto dir2 = l2.second - l2.first;
@@ -98,7 +85,7 @@ auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
 }
 
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
-              const Rectangle3DList &list) {
+              const Rectangle3DList &list) -> vector<int> {
   constexpr auto INF = std::numeric_limits<double>::max();
   const int START = pris.size() - 2, END = pris.size() - 1;
 
@@ -146,12 +133,16 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
   return path;
 }
 
-inline auto find_rectangle_indexs(const Rectangle3DList &list,
-                                  const Point3D &start, const Point3D &end)
-    -> vector<int> {
-  constexpr auto block_size = 1.0;
+auto rand_0_to_1() -> double {
   std::mt19937_64 rng{std::random_device{}()};
   std::uniform_real_distribution<double> dist{0.0, 1.0};
+  return dist(rng);
+}
+
+auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
+                           const Point3D &end) -> vector<int> {
+  constexpr auto block_size = 1.0;
+
   vector<PointWithRectangleIndex> points;
   std::map<int, int> pointToRectangleIndex;
 
@@ -159,7 +150,7 @@ inline auto find_rectangle_indexs(const Rectangle3DList &list,
     const auto &r = list[i];
     for (int j = 0;
          j < distance(r.LL, r.LR) * distance(r.LR, r.UR) / block_size; ++j) {
-      const auto x = dist(rng), y = dist(rng);
+      const auto x = rand_0_to_1(), y = rand_0_to_1();
       const auto point = (r.LL - r.LR) * x + (r.UR - r.LR) * y + r.LR;
       points.push_back({point, i});
       pointToRectangleIndex[points.size() - 1] = i;
@@ -167,17 +158,17 @@ inline auto find_rectangle_indexs(const Rectangle3DList &list,
   }
 
   const int start_rectangle =
-      std::ranges::find_if(list.begin(), list.end(),
-                           [&start](const auto &r) {
-                             return Basic::isPointInsideRectangle3D(start, r);
-                           }) -
+      find_if(list.begin(), list.end(),
+              [&start](const auto &r) {
+                return Basic::isPointInsideRectangle3D(start, r);
+              }) -
       list.begin();
 
   const int end_rectangle =
-      std::ranges::find_if(list.begin(), list.end(),
-                           [&end](const auto &r) {
-                             return Basic::isPointInsideRectangle3D(end, r);
-                           }) -
+      find_if(list.begin(), list.end(),
+              [&end](const auto &r) {
+                return Basic::isPointInsideRectangle3D(end, r);
+              }) -
       list.begin();
 
   points.emplace_back(start, start_rectangle);
@@ -191,10 +182,62 @@ inline auto find_rectangle_indexs(const Rectangle3DList &list,
   indexs.emplace_back(end_rectangle);
   return indexs;
 }
+
+auto lerp_point3D(const Point3D &a, const Point3D &b, double t) -> Point3D {
+  return (a - b) * t + b;
+}
+
+auto calc_path(const Rectangle3DList &list,
+               const vector<vector<int>> &rectangles, const Point3D &start,
+               const Point3D &end, const vector<Line3D> &lines,
+               const vector<double> &input) -> std::pair<Path3D, double> {
+  auto n = rectangles.size();
+  if (n == 1) {
+    return Basic::solve3D(list, start, end);
+  } else {
+    Path3D path{};
+    double dis = 0.0;
+    Rectangle3DList rects{};
+    for (const auto r : rectangles.front()) {
+      rects.push_back(list[r]);
+    }
+    auto [tmp_path, tmp_dis] = Basic::solve3D(
+        rects, start,
+        lerp_point3D(lines.front().first, lines.front().second, input.front()));
+    for_each(tmp_path.begin(), tmp_path.end(),
+             [&](auto &p) { path.emplace_back(p); });
+    dis += tmp_dis;
+    for (int i = 1; i < n - 1; ++i) {
+      rects.clear();
+      for (const auto r : rectangles[i]) {
+        rects.push_back(list[r]);
+      }
+      std::tie(tmp_path, tmp_dis) = Basic::solve3D(
+          rects,
+          lerp_point3D(lines[i - 1].first, lines[i - 1].second, input[i - 1]),
+          lerp_point3D(lines[i].first, lines[i].second, input[i]));
+      for_each(tmp_path.begin(), tmp_path.end(),
+               [&](auto &p) { path.emplace_back(p); });
+      dis += tmp_dis;
+    }
+    rects.clear();
+    for (const auto r : rectangles.back()) {
+      rects.push_back(list[r]);
+      std::tie(tmp_path, tmp_dis) = Basic::solve3D(
+          rects,
+          lerp_point3D(lines.back().first, lines.back().second, input.back()),
+          end);
+      for_each(tmp_path.begin(), tmp_path.end(),
+               [&](auto &p) { path.emplace_back(p); });
+      dis += tmp_dis;
+    }
+    return {path, dis};
+  }
+}
 } // namespace
 
-inline auto find_path(const Rectangle3DList &list, const Point3D &start,
-                      const Point3D &end) {
+auto find_path(const Rectangle3DList &list, const Point3D &start,
+               const Point3D &end) -> vector<int> {
   auto indexs = find_rectangle_indexs(list, start, end);
   vector<vector<int>> rectangles;
   vector<Line3D> lines;

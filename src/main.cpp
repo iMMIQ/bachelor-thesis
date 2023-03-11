@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "find_path.cpp"
+#include "find_path.h"
 
 using std::cin;
 using std::cout;
