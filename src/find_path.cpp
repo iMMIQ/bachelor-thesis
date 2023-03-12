@@ -11,7 +11,7 @@ using Solve::dot;
 
 using bg::distance;
 
-namespace FindPath {
+inline namespace FindPath {
 auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
   auto dir1 = l1.second - l1.first;
   auto dir2 = l2.second - l2.first;

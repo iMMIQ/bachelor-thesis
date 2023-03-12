@@ -4,7 +4,7 @@
 
 #include "input.h"
 
-namespace Input {
+inline namespace Input {
 auto read_stl(const std::string &file) -> vector<Triangle> {
   Assimp::Importer importer;
 
