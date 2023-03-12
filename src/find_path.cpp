@@ -56,15 +56,14 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
 
   if (overlaps_points.size() > 1) {
     return {overlaps_points[0], overlaps_points[1]};
-  } else {
-    return {};
   }
+  return {};
 }
 
 auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
     -> Line3D {
-  std::array<Point3D, 4> points1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR},
-      points2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
+  std::array<Point3D, 4> points1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR};
+  std::array<Point3D, 4> points2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
 
   auto isEdgeOverlap = [](const Point3D &p1, const Point3D &q1,
                           const Point3D &p2, const Point3D &q2) {
@@ -87,7 +86,8 @@ auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
               const Rectangle3DList &list) -> vector<int> {
   constexpr auto INF = std::numeric_limits<double>::max();
-  const int START = pris.size() - 2, END = pris.size() - 1;
+  const int START = pris.size() - 2;
+  const int END = pris.size() - 1;
 
   vector<bool> vis(pris.size(), false);
   vector<double> dis(vis.size(), INF);
@@ -150,7 +150,8 @@ auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
     const auto &r = list[i];
     for (int j = 0;
          j < distance(r.LL, r.LR) * distance(r.LR, r.UR) / block_size; ++j) {
-      const auto x = rand_0_to_1(), y = rand_0_to_1();
+      const auto x = rand_0_to_1();
+      const auto y = rand_0_to_1();
       const auto point = (r.LL - r.LR) * x + (r.UR - r.LR) * y + r.LR;
       points.push_back({point, i});
       pointToRectangleIndex[points.size() - 1] = i;
@@ -171,7 +172,7 @@ auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
               }) -
       list.begin();
 
-  points.emplace_back(start, start_rectangle);
+  points.push_back({start, start_rectangle});
   points.push_back({end, end_rectangle});
 
   const auto path = Dijkstra(points, list);
@@ -194,45 +195,44 @@ auto calc_path(const Rectangle3DList &list,
   auto n = rectangles.size();
   if (n == 1) {
     return Basic::solve3D(list, start, end);
-  } else {
-    Path3D path{};
-    double dis = 0.0;
-    Rectangle3DList rects{};
-    for (const auto r : rectangles.front()) {
+  }
+  Path3D path{};
+  double dis = 0.0;
+  Rectangle3DList rects{};
+  for (const auto r : rectangles.front()) {
+    rects.push_back(list[r]);
+  }
+  auto [tmp_path, tmp_dis] = Basic::solve3D(
+      rects, start,
+      lerp_point3D(lines.front().first, lines.front().second, input.front()));
+  for_each(tmp_path.begin(), tmp_path.end(),
+           [&](auto &p) { path.emplace_back(p); });
+  dis += tmp_dis;
+  for (int i = 1; i < n - 1; ++i) {
+    rects.clear();
+    for (const auto r : rectangles[i]) {
       rects.push_back(list[r]);
     }
-    auto [tmp_path, tmp_dis] = Basic::solve3D(
-        rects, start,
-        lerp_point3D(lines.front().first, lines.front().second, input.front()));
-    for_each(tmp_path.begin(), tmp_path.end(),
+    std::tie(tmp_path, tmp_dis) = Basic::solve3D(
+        rects,
+        lerp_point3D(lines[i - 1].first, lines[i - 1].second, input[i - 1]),
+        lerp_point3D(lines[i].first, lines[i].second, input[i]));
+    for_each(tmp_path.begin() + 1, tmp_path.end(),
              [&](auto &p) { path.emplace_back(p); });
     dis += tmp_dis;
-    for (int i = 1; i < n - 1; ++i) {
-      rects.clear();
-      for (const auto r : rectangles[i]) {
-        rects.push_back(list[r]);
-      }
-      std::tie(tmp_path, tmp_dis) = Basic::solve3D(
-          rects,
-          lerp_point3D(lines[i - 1].first, lines[i - 1].second, input[i - 1]),
-          lerp_point3D(lines[i].first, lines[i].second, input[i]));
-      for_each(tmp_path.begin() + 1, tmp_path.end(),
-               [&](auto &p) { path.emplace_back(p); });
-      dis += tmp_dis;
-    }
-    rects.clear();
-    for (const auto r : rectangles.back()) {
-      rects.push_back(list[r]);
-      std::tie(tmp_path, tmp_dis) = Basic::solve3D(
-          rects,
-          lerp_point3D(lines.back().first, lines.back().second, input.back()),
-          end);
-      for_each(tmp_path.begin() + 1, tmp_path.end(),
-               [&](auto &p) { path.emplace_back(p); });
-      dis += tmp_dis;
-    }
-    return {path, dis};
   }
+  rects.clear();
+  for (const auto r : rectangles.back()) {
+    rects.push_back(list[r]);
+    std::tie(tmp_path, tmp_dis) = Basic::solve3D(
+        rects,
+        lerp_point3D(lines.back().first, lines.back().second, input.back()),
+        end);
+    for_each(tmp_path.begin() + 1, tmp_path.end(),
+             [&](auto &p) { path.emplace_back(p); });
+    dis += tmp_dis;
+  }
+  return {path, dis};
 }
 
 auto simulated_annealing(const Rectangle3DList &list,
@@ -253,8 +253,7 @@ auto simulated_annealing(const Rectangle3DList &list,
 
   for (int i = 0; i < iterations; ++i) {
     auto new_solution = current;
-    int index = rng() % n;
-    new_solution[index] = rand_0_to_1();
+    new_solution[rng() % n] = rand_0_to_1();
 
     auto new_energy =
         calc_path(list, rectangles, start, end, lines, new_solution).second;

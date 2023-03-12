@@ -8,12 +8,14 @@ struct DijkstraNode {
   int id;
   double dis;
 
-  bool operator<(const DijkstraNode &rhs) const { return dis > rhs.dis; }
+  auto operator<(const DijkstraNode &rhs) const -> bool {
+    return dis > rhs.dis;
+  }
 };
 
 struct PointWithRectangleIndex {
   Point3D p;
-  int r;
+  int r{};
 };
 
 auto isParallel(const Line3D &l1, const Line3D &l2) -> bool;

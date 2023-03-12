@@ -14,22 +14,24 @@ struct Point {
 
   explicit Point(double x = 0, double y = 0) : x(x), y(y) {}
 
-  Point operator+(const Point &other) const {
+  auto operator+(const Point &other) const -> Point {
     return Point(x + other.x, y + other.y);
   }
 
-  Point operator-(const Point &other) const {
+  auto operator-(const Point &other) const -> Point {
     return Point(x - other.x, y - other.y);
   }
 
-  Point operator*(double scalar) const { return Point(x * scalar, y * scalar); }
+  auto operator*(double scalar) const -> Point {
+    return Point(x * scalar, y * scalar);
+  }
 
-  friend std::istream &operator>>(std::istream &in, Point &p) {
+  friend auto operator>>(std::istream &in, Point &p) -> std::istream & {
     in >> p.x >> p.y;
     return in;
   }
 
-  friend std::ostream &operator<<(std::ostream &out, const Point &p) {
+  friend auto operator<<(std::ostream &out, const Point &p) -> std::ostream & {
     out << "(" << p.x << ", " << p.y << ")";
     return out;
   }
@@ -37,21 +39,21 @@ struct Point {
 
 namespace boost::geometry::traits {
 template <> struct tag<Point> {
-  typedef point_tag type;
+  using type = point_tag;
 };
 template <> struct coordinate_type<Point> {
-  typedef double type;
+  using type = double;
 };
 template <> struct coordinate_system<Point> {
-  typedef cs::cartesian type;
+  using type = cs::cartesian;
 };
 template <> struct dimension<Point> : boost::mpl::int_<2> {};
 template <> struct access<Point, 0> {
-  static double get(Point const &p) { return p.x; }
+  static auto get(Point const &p) -> double { return p.x; }
   static void set(Point &p, double const &value) { p.x = value; }
 };
 template <> struct access<Point, 1> {
-  static double get(Point const &p) { return p.y; }
+  static auto get(Point const &p) -> double { return p.y; }
   static void set(Point &p, double const &value) { p.y = value; }
 };
 } // namespace boost::geometry::traits
@@ -62,24 +64,25 @@ struct Point3D {
   explicit Point3D(double x = 0, double y = 0, double z = 0)
       : x(x), y(y), z(z) {}
 
-  Point3D operator+(const Point3D &other) const {
+  auto operator+(const Point3D &other) const -> Point3D {
     return Point3D(x + other.x, y + other.y, z + other.z);
   }
 
-  Point3D operator-(const Point3D &other) const {
+  auto operator-(const Point3D &other) const -> Point3D {
     return Point3D(x - other.x, y - other.y, z - other.z);
   }
 
-  Point3D operator*(double scalar) const {
+  auto operator*(double scalar) const -> Point3D {
     return Point3D(x * scalar, y * scalar, z * scalar);
   }
 
-  friend std::istream &operator>>(std::istream &in, Point3D &p) {
+  friend auto operator>>(std::istream &in, Point3D &p) -> std::istream & {
     in >> p.x >> p.y >> p.z;
     return in;
   }
 
-  friend std::ostream &operator<<(std::ostream &out, const Point3D &p) {
+  friend auto operator<<(std::ostream &out, const Point3D &p)
+      -> std::ostream & {
     out << "(" << p.x << ", " << p.y << ", " << p.z << ")";
     return out;
   }
@@ -87,25 +90,25 @@ struct Point3D {
 
 namespace boost::geometry::traits {
 template <> struct tag<Point3D> {
-  typedef point_tag type;
+  using type = point_tag;
 };
 template <> struct coordinate_type<Point3D> {
-  typedef double type;
+  using type = double;
 };
 template <> struct coordinate_system<Point3D> {
-  typedef cs::cartesian type;
+  using type = cs::cartesian;
 };
 template <> struct dimension<Point3D> : boost::mpl::int_<3> {};
 template <> struct access<Point3D, 0> {
-  static double get(Point3D const &p) { return p.x; }
+  static auto get(Point3D const &p) -> double { return p.x; }
   static void set(Point3D &p, double const &value) { p.x = value; }
 };
 template <> struct access<Point3D, 1> {
-  static double get(Point3D const &p) { return p.y; }
+  static auto get(Point3D const &p) -> double { return p.y; }
   static void set(Point3D &p, double const &value) { p.y = value; }
 };
 template <> struct access<Point3D, 2> {
-  static double get(Point3D const &p) { return p.z; }
+  static auto get(Point3D const &p) -> double { return p.z; }
   static void set(Point3D &p, double const &value) { p.z = value; }
 };
 } // namespace boost::geometry::traits

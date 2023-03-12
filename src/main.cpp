@@ -7,13 +7,14 @@ using std::cout;
 using std::endl;
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-  int n;
+  int n = 0;
   cin >> n;
   Plane plane(n);
   for (int i = 0; i < n; ++i) {
     cin >> plane[i].LL >> plane[i].UR >> plane[i].LR;
   }
-  Point3D start, end;
+  Point3D start;
+  Point3D end;
   cin >> start >> end;
   auto ans = find_path(plane, start, end);
   cout << "path:\n";

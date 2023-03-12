@@ -44,7 +44,7 @@ inline auto isCoplanar(const Point3D &a, const Point3D &b, const Point3D &c,
   auto p1 = a - b;
   auto p2 = a - c;
   auto p3 = a - d;
-  return std::abs(dot(p1, cross(p2, p3))) < 1e-9;
+  return std::abs(dot(p1, cross(p2, p3))) < EPS;
 }
 
 /**
