@@ -1,5 +1,0 @@
-Checks: '-*\,readability-*,-readability-identifier-length,-readability-function-cognitive-complexity,performance-*,portability-*,modernize-*,cppcoreguidelines-*,clang-analyzer-*,boost-*'
-
-HeaderFilterRegex: '.*'
-
-FormatStyle: llvm
