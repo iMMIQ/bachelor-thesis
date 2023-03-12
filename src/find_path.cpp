@@ -6,12 +6,12 @@
 
 #include "find_path.h"
 
-using Basic::cross;
-using Basic::dot;
+using Solve::cross;
+using Solve::dot;
 
 using bg::distance;
 
-namespace {
+namespace FindPath {
 auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
   auto dir1 = l1.second - l1.first;
   auto dir2 = l2.second - l2.first;
@@ -40,7 +40,7 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
     if (std::isnan(k)) {
       k = (p.z - l1.first.z) / (l1.second.z - l1.first.z);
     }
-    if (k > -Basic::EPS && k < 1 + Basic::EPS) {
+    if (k > -Solve::EPS && k < 1 + Solve::EPS) {
       k = (p.x - l2.first.x) / (l2.second.x - l2.first.x);
       if (std::isnan(k)) {
         k = (p.y - l2.first.y) / (l2.second.y - l2.first.y);
@@ -48,7 +48,7 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
       if (std::isnan(k)) {
         k = (p.z - l2.first.z) / (l2.second.z - l2.first.z);
       }
-      if (k > -Basic::EPS && k < 1 + Basic::EPS) {
+      if (k > -Solve::EPS && k < 1 + Solve::EPS) {
         overlaps_points.emplace_back(p);
       }
     }
@@ -68,7 +68,7 @@ auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
   auto isEdgeOverlap = [](const Point3D &p1, const Point3D &q1,
                           const Point3D &p2, const Point3D &q2) {
     auto line = calcOverlapLine(Line3D(p1, q1), Line3D(p2, q2));
-    return distance(line.first, line.second) > Basic::EPS;
+    return distance(line.first, line.second) > Solve::EPS;
   };
 
   for (int i = 0; i < 4; ++i) {
@@ -100,7 +100,7 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
 
   auto isRectangleOverlap = [](const Rectangle3D &r1, const Rectangle3D &r2) {
     auto line = calcOverlapRectangle(r1, r2);
-    return distance(line.first, line.second) > Basic::EPS;
+    return distance(line.first, line.second) > Solve::EPS;
   };
 
   while (!pq.empty()) {
@@ -161,14 +161,14 @@ auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
   const int start_rectangle =
       find_if(list.begin(), list.end(),
               [&start](const auto &r) {
-                return Basic::isPointInsideRectangle3D(start, r);
+                return Solve::isPointInsideRectangle3D(start, r);
               }) -
       list.begin();
 
   const int end_rectangle =
       find_if(list.begin(), list.end(),
               [&end](const auto &r) {
-                return Basic::isPointInsideRectangle3D(end, r);
+                return Solve::isPointInsideRectangle3D(end, r);
               }) -
       list.begin();
 
@@ -194,7 +194,7 @@ auto calc_path(const Rectangle3DList &list,
                const vector<double> &input) -> std::pair<Path3D, double> {
   auto n = rectangles.size();
   if (n == 1) {
-    return Basic::solve3D(list, start, end);
+    return Solve::solve3D(list, start, end);
   }
   Path3D path{};
   double dis = 0.0;
@@ -202,7 +202,7 @@ auto calc_path(const Rectangle3DList &list,
   for (const auto r : rectangles.front()) {
     rects.push_back(list[r]);
   }
-  auto [tmp_path, tmp_dis] = Basic::solve3D(
+  auto [tmp_path, tmp_dis] = Solve::solve3D(
       rects, start,
       lerp_point3D(lines.front().first, lines.front().second, input.front()));
   for_each(tmp_path.begin(), tmp_path.end(),
@@ -213,7 +213,7 @@ auto calc_path(const Rectangle3DList &list,
     for (const auto r : rectangles[i]) {
       rects.push_back(list[r]);
     }
-    std::tie(tmp_path, tmp_dis) = Basic::solve3D(
+    std::tie(tmp_path, tmp_dis) = Solve::solve3D(
         rects,
         lerp_point3D(lines[i - 1].first, lines[i - 1].second, input[i - 1]),
         lerp_point3D(lines[i].first, lines[i].second, input[i]));
@@ -224,7 +224,7 @@ auto calc_path(const Rectangle3DList &list,
   rects.clear();
   for (const auto r : rectangles.back()) {
     rects.push_back(list[r]);
-    std::tie(tmp_path, tmp_dis) = Basic::solve3D(
+    std::tie(tmp_path, tmp_dis) = Solve::solve3D(
         rects,
         lerp_point3D(lines.back().first, lines.back().second, input.back()),
         end);
@@ -273,7 +273,7 @@ auto simulated_annealing(const Rectangle3DList &list,
   }
   return best;
 }
-} // namespace
+} // namespace FindPath
 
 auto find_path(const Rectangle3DList &list, const Point3D &start,
                const Point3D &end) -> std::pair<Path3D, double> {
@@ -298,7 +298,7 @@ auto find_path(const Rectangle3DList &list, const Point3D &start,
     rectangles.emplace_back(rects);
   }
   if (lines.empty()) {
-    return Basic::solve3D(list, start, end);
+    return Solve::solve3D(list, start, end);
   }
   auto tmp = simulated_annealing(list, rectangles, start, end, lines, 10000,
                                  1.0, 0.999);

@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstdlib>
 #include <ctime>
 #include <iomanip>
 #include <iostream>

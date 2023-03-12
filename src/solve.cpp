@@ -5,7 +5,7 @@
 #include <cmath>
 #include <limits>
 
-#include "basic.h"
+#include "solve.h"
 
 using std::abs;
 using std::atan;
@@ -20,7 +20,7 @@ using std::ranges::for_each;
 
 using bg::distance;
 
-namespace Basic {
+namespace Solve {
 auto solve(const vector<Rectangle> &rectangles, const Point &start,
            const Point &end) -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max();
@@ -377,4 +377,4 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
 
   return {path3D, distance};
 }
-} // namespace Basic
+} // namespace Solve

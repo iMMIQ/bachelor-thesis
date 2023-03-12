@@ -8,7 +8,7 @@
 
 using bg::distance;
 
-namespace Basic {
+namespace Solve {
 constexpr auto EPS = 1e-9;
 
 /**
@@ -109,4 +109,4 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
 
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double>;
-} // namespace Basic
+} // namespace Solve

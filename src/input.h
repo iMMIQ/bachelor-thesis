@@ -3,7 +3,7 @@
 
 #include "data.h"
 
-namespace {
+inline namespace Input {
 struct Triangle {
   Point3D A, B, C;
 
@@ -11,6 +11,6 @@ struct Triangle {
 };
 
 auto read_stl(const std::string &file) -> vector<Triangle>;
-} // namespace
+} // namespace Input
 
 #endif // WIRING_INPUT_H

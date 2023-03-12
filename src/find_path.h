@@ -1,9 +1,9 @@
 #ifndef WIRING_FIND_PATH_H
 #define WIRING_FIND_PATH_H
 
-#include "basic.h"
+#include "solve.h"
 
-namespace {
+inline namespace FindPath {
 struct DijkstraNode {
   int id;
   double dis;
@@ -40,7 +40,7 @@ auto simulated_annealing(const Rectangle3DList &list,
                          const vector<Line3D> &lines, int iterations,
                          double initial_temp, double cooling_rate)
     -> vector<double>;
-} // namespace
+} // namespace FindPath
 
 auto find_path(const Rectangle3DList &list, const Point3D &start,
                const Point3D &end) -> std::pair<Path3D, double>;
