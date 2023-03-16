@@ -9,8 +9,6 @@
 using bg::distance;
 
 namespace Solve {
-constexpr auto EPS = 1e-9;
-
 /**
  * @brief Compute the dot product of two 3D points
  * @param a The first point

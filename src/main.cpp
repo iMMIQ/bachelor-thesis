@@ -9,7 +9,7 @@ using std::endl;
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
   int n = 0;
   cin >> n;
-  Plane plane(n);
+  Plane plane(n, Rectangle3D());
   for (int i = 0; i < n; ++i) {
     cin >> plane[i].LL >> plane[i].UR >> plane[i].LR;
   }

@@ -2,8 +2,6 @@
 #include <queue>
 #include <random>
 
-#include <boost/geometry/algorithms/detail/equals/interface.hpp>
-
 #include "find_path.h"
 
 using Solve::cross;
@@ -16,18 +14,18 @@ auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
   auto dir1 = l1.second - l1.first;
   auto dir2 = l2.second - l2.first;
   auto c = cross(dir1, dir2);
-  return bg::equals(c, Point3D());
+  return c == Point3D();
 }
 
 auto arePointsCollinear(const Point3D &p1, const Point3D &p2, const Point3D &p3,
                         const Point3D &p4) -> bool {
-  return bg::equals(cross(p2 - p1, p3 - p1), Point3D()) &&
-         bg::equals(cross(p2 - p1, p4 - p1), Point3D());
+  return cross(p2 - p1, p3 - p1) == Point3D() &&
+         cross(p2 - p1, p4 - p1) == Point3D();
 }
 
 auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
   if (!arePointsCollinear(l1.first, l1.second, l2.first, l2.second) ||
-      bg::equals(l1.first, l1.second) || bg::equals(l2.first, l2.second)) {
+      l1.first == l1.second || l2.first == l2.second) {
     return {};
   }
 
@@ -40,7 +38,7 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
     if (std::isnan(k)) {
       k = (p.z - l1.first.z) / (l1.second.z - l1.first.z);
     }
-    if (k > -Solve::EPS && k < 1 + Solve::EPS) {
+    if (k > -EPS && k < 1 + EPS) {
       k = (p.x - l2.first.x) / (l2.second.x - l2.first.x);
       if (std::isnan(k)) {
         k = (p.y - l2.first.y) / (l2.second.y - l2.first.y);
@@ -48,7 +46,7 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
       if (std::isnan(k)) {
         k = (p.z - l2.first.z) / (l2.second.z - l2.first.z);
       }
-      if (k > -Solve::EPS && k < 1 + Solve::EPS) {
+      if (k > -EPS && k < 1 + EPS) {
         overlaps_points.emplace_back(p);
       }
     }
@@ -68,7 +66,7 @@ auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
   auto isEdgeOverlap = [](const Point3D &p1, const Point3D &q1,
                           const Point3D &p2, const Point3D &q2) {
     auto line = calcOverlapLine(Line3D(p1, q1), Line3D(p2, q2));
-    return distance(line.first, line.second) > Solve::EPS;
+    return distance(line.first, line.second) > EPS;
   };
 
   for (int i = 0; i < 4; ++i) {
@@ -100,7 +98,7 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
 
   auto isRectangleOverlap = [](const Rectangle3D &r1, const Rectangle3D &r2) {
     auto line = calcOverlapRectangle(r1, r2);
-    return distance(line.first, line.second) > Solve::EPS;
+    return distance(line.first, line.second) > EPS;
   };
 
   while (!pq.empty()) {

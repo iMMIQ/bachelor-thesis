@@ -1,3 +1,6 @@
+#ifndef WIRING_DATA_H
+#define WIRING_DATA_H
+
 #include <vector>
 
 #include <boost/geometry.hpp>
@@ -8,6 +11,8 @@
 using std::vector;
 
 namespace bg = boost::geometry;
+
+constexpr auto EPS = 1e-9;
 
 struct Point {
   double x, y;
@@ -76,6 +81,11 @@ struct Point3D {
     return Point3D(x * scalar, y * scalar, z * scalar);
   }
 
+  auto operator==(const Point3D &other) const -> bool {
+    return abs(x - other.x) < EPS && abs(y - other.y) < EPS &&
+           abs(z - other.z) < EPS;
+  }
+
   friend auto operator>>(std::istream &in, Point3D &p) -> std::istream & {
     in >> p.x >> p.y >> p.z;
     return in;
@@ -124,6 +134,10 @@ struct Rectangle3D {
   Point3D LL; // 左下
   Point3D UR; // 右上
   Point3D LR; // 右下
+
+  explicit Rectangle3D(const Point3D &LL, const Point3D &UR, const Point3D &LR)
+      : LL(LL), UR(UR), LR(LR) {}
+  explicit Rectangle3D() = default;
 };
 
 using Rectangle3DList = vector<Rectangle3D>;
@@ -131,3 +145,5 @@ using Plane = Rectangle3DList;
 
 using Path = vector<Point>;
 using Path3D = vector<Point3D>;
+
+#endif // WIRING_DATA_H
