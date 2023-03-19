@@ -6,7 +6,7 @@
 #include "solve.h"
 
 inline namespace Input {
-auto read_stl(const std::string &file) -> vector<Triangle> {
+auto read_model(const std::string &file) -> vector<Triangle> {
   Assimp::Importer importer;
 
   const auto *scene = importer.ReadFile(file, aiProcess_Triangulate);
@@ -41,8 +41,8 @@ auto isPerpendicular(const Line3D &a, const Line3D &b) -> bool {
 }
 
 auto isRectangle(const Triangle &a, const Triangle &b) -> bool {
-  vector<Point3D> va{a.A, a.B, a.C};
-  vector<Point3D> vb{b.A, b.B, b.C};
+  const auto va = {a.A, a.B, a.C};
+  const auto vb = {b.A, b.B, b.C};
   Point3D same_point1, same_point2;
   int same_count = 0;
   for (const auto &p : va) {
@@ -58,6 +58,7 @@ auto isRectangle(const Triangle &a, const Triangle &b) -> bool {
         default:
           return false;
         }
+        same_count++;
         break;
       }
     }

@@ -110,8 +110,9 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
     vis[id] = true;
 
     for (int i = 0; i < pris.size(); ++i) {
-      if (pris[i].r == pris[id].r ||
-          isRectangleOverlap(list[pris[i].r], list[pris[id].r])) {
+      if ((pris[i].r == pris[id].r ||
+           isRectangleOverlap(list[pris[i].r], list[pris[id].r]) &&
+               distance(pris[i].p, pris[id].p) < 5.0)) {
         if (const auto tmp = distance(pris[i].p, pris[id].p);
             dis[i] > dis[id] + tmp) {
           dis[i] = dis[id] + tmp;
@@ -137,8 +138,8 @@ auto rand_0_to_1() -> double {
   return dist(rng);
 }
 
-auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
-                           const Point3D &end) -> vector<int> {
+auto find_rectangle_index(const Rectangle3DList &list, const Point3D &start,
+                          const Point3D &end) -> vector<int> {
   constexpr auto block_size = 1.0;
 
   vector<PointWithRectangleIndex> points;
@@ -174,12 +175,12 @@ auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
   points.push_back({end, end_rectangle});
 
   const auto path = Dijkstra(points, list);
-  vector<int> indexs{start_rectangle};
+  vector<int> index{start_rectangle};
   for (const auto i : path) {
-    indexs.emplace_back(pointToRectangleIndex[i]);
+    index.emplace_back(pointToRectangleIndex[i]);
   }
-  indexs.emplace_back(end_rectangle);
-  return indexs;
+  index.emplace_back(end_rectangle);
+  return index;
 }
 
 auto lerp_point3D(const Point3D &a, const Point3D &b, double t) -> Point3D {
@@ -275,7 +276,7 @@ auto simulated_annealing(const Rectangle3DList &list,
 
 auto find_path(const Rectangle3DList &list, const Point3D &start,
                const Point3D &end) -> std::pair<Path3D, double> {
-  auto indexs = find_rectangle_indexs(list, start, end);
+  auto indexs = find_rectangle_index(list, start, end);
   vector<vector<int>> rectangles;
   vector<Line3D> lines;
   for (int i = 0; i < indexs.size(); ++i) {

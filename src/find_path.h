@@ -32,7 +32,7 @@ auto calc_path(const Rectangle3DList &list,
                const vector<vector<int>> &rectangles, const Point3D &start,
                const Point3D &end, const vector<Line3D> &lines,
                const vector<double> &input) -> std::pair<Path3D, double>;
-auto find_rectangle_indexs(const Rectangle3DList &list, const Point3D &start,
+auto find_rectangle_index(const Rectangle3DList &list, const Point3D &start,
                            const Point3D &end) -> vector<int>;
 auto simulated_annealing(const Rectangle3DList &list,
                          const vector<vector<int>> &rectangles,
