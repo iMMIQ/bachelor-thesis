@@ -16,8 +16,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
   //  }
   auto plane = Input::transform_tri2rect3D(
       Input::read_model("../test/Cube_3d_printing_sample.stl"));
-  Point3D start(-55, 60, 0);
-  Point3D end(-55, 40, 20);
+  Point3D start(-55, 60, 20);
+  Point3D end(-55, 40, 0);
   //  cin >> start >> end;
   auto ans = find_path(plane, start, end);
   cout << "path:\n";

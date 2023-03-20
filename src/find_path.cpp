@@ -82,7 +82,8 @@ auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
 }
 
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
-              const Rectangle3DList &list) -> vector<int> {
+              const Rectangle3DList &list, const vector<vector<bool>> &edge)
+    -> vector<int> {
   constexpr auto INF = std::numeric_limits<double>::max();
   const int START = pris.size() - 2;
   const int END = pris.size() - 1;
@@ -96,11 +97,6 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
   dis[START] = 0;
   pq.push({START, 0});
 
-  auto isRectangleOverlap = [](const Rectangle3D &r1, const Rectangle3D &r2) {
-    auto line = calcOverlapRectangle(r1, r2);
-    return distance(line.first, line.second) > EPS;
-  };
-
   while (!pq.empty()) {
     const auto id = pq.top().id;
     pq.pop();
@@ -110,9 +106,7 @@ auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
     vis[id] = true;
 
     for (int i = 0; i < pris.size(); ++i) {
-      if ((pris[i].r == pris[id].r ||
-           isRectangleOverlap(list[pris[i].r], list[pris[id].r]) &&
-               distance(pris[i].p, pris[id].p) < 5.0)) {
+      if (edge[pris[i].r][pris[id].r]) {
         if (const auto tmp = distance(pris[i].p, pris[id].p);
             dis[i] > dis[id] + tmp) {
           dis[i] = dis[id] + tmp;
@@ -174,7 +168,24 @@ auto find_rectangle_index(const Rectangle3DList &list, const Point3D &start,
   points.push_back({start, start_rectangle});
   points.push_back({end, end_rectangle});
 
-  const auto path = Dijkstra(points, list);
+  auto isRectangleOverlap = [](const Rectangle3D &r1, const Rectangle3D &r2) {
+    auto line = calcOverlapRectangle(r1, r2);
+    return distance(line.first, line.second) > EPS;
+  };
+
+  vector<vector<bool>> edge(list.size(), vector<bool>(list.size(), false));
+  for (int i = 0; i < list.size(); ++i) {
+    for (int j = i + 1; j < list.size(); ++j) {
+      if (isRectangleOverlap(list[i], list[j])) {
+        edge[i][j] = edge[j][i] = true;
+      }
+    }
+  }
+  for (int i = 0; i < list.size(); ++i) {
+    edge[i][i] = true;
+  }
+  const auto path = Dijkstra(points, list, edge);
+
   vector<int> index{start_rectangle};
   for (const auto i : path) {
     index.emplace_back(pointToRectangleIndex[i]);
