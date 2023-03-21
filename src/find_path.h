@@ -43,7 +43,7 @@ auto simulated_annealing(const Rectangle3DList &list,
     -> vector<double>;
 } // namespace FindPath
 
-auto find_path(const Rectangle3DList &list, const Point3D &start,
-               const Point3D &end) -> std::pair<Path3D, double>;
+auto find_path(Rectangle3DList &list, const Point3D &start, const Point3D &end)
+    -> std::pair<Path3D, double>;
 
 #endif // WIRING_FIND_PATH_H

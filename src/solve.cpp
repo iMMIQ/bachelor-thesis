@@ -21,8 +21,8 @@ using std::ranges::for_each;
 using bg::distance;
 
 namespace Solve {
-auto solve(const vector<Rectangle> &rectangles, const Point &start,
-           const Point &end) -> std::pair<Path, double> {
+auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
+    -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max();
   const int n = rectangles.size();
   vector<double> LOW(n);
@@ -37,6 +37,10 @@ auto solve(const vector<Rectangle> &rectangles, const Point &start,
   auto left_slope = -INF;
   auto right_slope = INF;
   auto res = INF;
+
+  if (start.x < end.x) {
+    std::swap(start, end);
+  }
 
   const int start_rectangle = find_if(rectangles.begin(), rectangles.end(),
                                       [&start](const auto &r) {

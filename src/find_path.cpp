@@ -285,20 +285,26 @@ auto simulated_annealing(const Rectangle3DList &list,
 }
 } // namespace FindPath
 
-auto find_path(const Rectangle3DList &list, const Point3D &start,
-               const Point3D &end) -> std::pair<Path3D, double> {
+auto find_path(Rectangle3DList &list, const Point3D &start, const Point3D &end)
+    -> std::pair<Path3D, double> {
   auto indexs = find_rectangle_index(list, start, end);
   vector<vector<int>> rectangles;
   vector<Line3D> lines;
   for (int i = 0; i < indexs.size(); ++i) {
     vector<int> rects{indexs[i]};
     Line3D line;
+    //    Line3D v;
     for (++i; i < indexs.size(); ++i) {
-      if (auto overlap_line =
-              calcOverlapRectangle(list[rects.back()], list[indexs[i]]);
+      auto r = list[rects.back()];
+      if (auto overlap_line = calcOverlapRectangle(r, list[indexs[i]]);
           isParallel(line, overlap_line)) {
         line = overlap_line;
-        rects.emplace_back(indexs[i]);
+        //        for (const auto &p : {r.LL, r.LR, r.UR, r.LL + r.UR - r.LR}) {
+        //          if (isParallel(line, Line3D(p, line.second))) {
+        //            if (v == Point3D() ||)
+        //          }
+        //        }
+        rects.push_back(indexs[i]);
       } else {
         lines.emplace_back(overlap_line);
         i--;
@@ -308,7 +314,11 @@ auto find_path(const Rectangle3DList &list, const Point3D &start,
     rectangles.emplace_back(rects);
   }
   if (lines.empty()) {
-    return Solve::solve3D(list, start, end);
+    Rectangle3DList tmp;
+    for (const auto i : indexs) {
+      tmp.push_back(list[i]);
+    }
+    return Solve::solve3D(tmp, start, end);
   }
   auto tmp = simulated_annealing(list, rectangles, start, end, lines, 10000,
                                  1.0, 0.999);

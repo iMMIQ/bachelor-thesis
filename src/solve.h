@@ -102,8 +102,8 @@ inline auto calc_slope(const Point &a, const Point &b) -> double {
   return (b.y - a.y) / (b.x - a.x);
 }
 
-auto solve(const vector<Rectangle> &rectangles, const Point &start,
-           const Point &end) -> std::pair<Path, double>;
+auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
+    -> std::pair<Path, double>;
 
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double>;
