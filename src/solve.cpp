@@ -96,10 +96,6 @@ auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
   auto right_slope = INF;
   auto res = INF;
 
-  if (start.x < end.x) {
-    std::swap(start, end);
-  }
-
   const int start_rectangle = find_if(rectangles.begin(), rectangles.end(),
                                       [&start](const auto &r) {
                                         return isPointInsideRectangle(start, r);
@@ -273,14 +269,43 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
   if (plane_copy.size() > 1) {
     auto &base_r = plane_copy.front();
     const auto base_line = calcOverlapRectangle(base_r, plane_copy.at(1));
-    Line3D v;
-    for (const auto &p :
-         {base_r.LL, base_r.LR, base_r.UR, base_r.LL + base_r.UR - base_r.LR}) {
-      if (const auto pro = point_projection(p, base_line); pro != p) {
-        v = Line3D(pro, p);
+    Line3D last_line;
+    {
+      const auto &r = plane_copy.front();
+      const std::array<Point3D, 4> ps{r.LL, r.LR, r.UR, r.LL + r.UR - r.LR};
+      for (int i = 0; i < 4; ++i) {
+        if (const auto line = Line3D(ps[i], ps[(i + 1) % 4]);
+            isParallel(line, base_line) && !isSameLine(line, base_line)) {
+          last_line = line;
+          break;
+        }
       }
     }
-
+    for (auto &r : plane_copy) {
+      const std::array<Point3D, 4> ps{r.LL, r.LR, r.UR, r.LL + r.UR - r.LR};
+      for (int i = 0; i < 4; ++i) {
+        if (const auto line = Line3D(ps[i], ps[(i + 1) % 4]);
+            isParallel(line, base_line) && !isSameLine(line, last_line)) {
+          last_line = line;
+          Rectangle3D tmp;
+          if (isSameAxis(Line3D(ps[i], ps[(i + 1) % 4]), base_line)) {
+            tmp.LR = ps[i];
+            tmp.UR = ps[(i + 1) % 4];
+          } else {
+            tmp.LR = ps[(i + 1) % 4];
+            tmp.UR = ps[i];
+          }
+          if (distance(ps[(i + 2) % 4], tmp.LR) <
+              distance(ps[(i + 3) % 4], tmp.LR)) {
+            tmp.LL = ps[(i + 2) % 4];
+          } else {
+            tmp.LL = ps[(i + 3) % 4];
+          }
+          r = tmp;
+          break;
+        }
+      }
+    }
   }
 
   for (auto it = plane_copy.begin(); it != plane_copy.end(); ++it) {
@@ -380,6 +405,26 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
         tmp_y = r.UR.y;
         update_y(r.UR.y, r.UR.z);
         update_z(tmp_y, r.UR.z);
+      };
+
+      for_each(it, plane_copy.end(), update);
+    }
+
+    if (it->LR.x < 0) {
+      auto update = [&](Rectangle3D &r) {
+        r.LL.x = -r.LL.x;
+        r.LR.x = -r.LR.x;
+        r.UR.x = -r.UR.x;
+      };
+
+      for_each(it, plane_copy.end(), update);
+    }
+
+    if (it->UR.y < 0) {
+      auto update = [&](Rectangle3D &r) {
+        r.LL.y = -r.LL.y;
+        r.LR.y = -r.LR.y;
+        r.UR.y = -r.UR.y;
       };
 
       for_each(it, plane_copy.end(), update);

@@ -37,8 +37,8 @@ inline auto cross(const Point3D &a, const Point3D &b) -> Point3D {
  * @param d The fourth point
  * @return True if the four points are coplanar, false otherwise
  */
-inline auto isCoplanar(const Point3D &a, const Point3D &b, const Point3D &c,
-                       const Point3D &d) -> bool {
+inline auto areCoplanar(const Point3D &a, const Point3D &b, const Point3D &c,
+                        const Point3D &d) -> bool {
   auto p1 = a - b;
   auto p2 = a - c;
   auto p3 = a - d;
@@ -81,7 +81,7 @@ inline auto isPointInsideRectangle(const Point &p, const Rectangle &r) -> bool {
  */
 inline auto isPointInsideRectangle3D(const Point3D &p, const Rectangle3D &r)
     -> bool {
-  if (isCoplanar(r.LL, r.LR, r.UR, p)) {
+  if (areCoplanar(r.LL, r.LR, r.UR, p)) {
     const auto p1 = point_projection(p, {r.LR, r.LL});
     const auto p2 = point_projection(p, {r.LR, r.UR});
     return std::abs(distance(p1, r.LR) + distance(p1, r.LL) -
@@ -115,11 +115,19 @@ inline auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
   return c == Point3D();
 }
 
-inline auto isSameLine(const Line3D &l1, const Line3D &l2) -> bool {
-  if (isParallel(l1, l2)){
+inline auto areCollinear(const Point3D &p1, const Point3D &p2,
+                         const Point3D &p3) -> bool {
+  const auto v1 = p2 - p1;
+  const auto v2 = p3 - p1;
+  return cross(v1, v2) == Point3D();
+}
 
-  }
-  return false;
+inline auto isSameLine(const Line3D &l1, const Line3D &l2) -> bool {
+  return isParallel(l1, l2) && areCollinear(l1.first, l1.second, l2.first);
+}
+
+inline auto isSameAxis(const Line3D &l1, const Line3D &l2) -> bool {
+  return dot(l1.first, l2.first) > 0;
 }
 
 auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D;

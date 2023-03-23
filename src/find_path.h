@@ -19,8 +19,7 @@ struct PointWithRectangleIndex {
 };
 
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
-              const Rectangle3DList &list, const vector<vector<bool>> &edge)
-    -> vector<int>;
+              const Rectangle3DList &list) -> vector<int>;
 auto rand_0_to_1() -> double;
 auto lerp_point3D(const Point3D &a, const Point3D &b, double t) -> Point3D;
 auto calc_path(const Rectangle3DList &list,

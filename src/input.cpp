@@ -85,7 +85,7 @@ auto isRectangle(const Triangle &a, const Triangle &b) -> bool {
                        Line3D(same_point2, b_point))) {
     return false;
   }
-  return Solve::isCoplanar(same_point1, same_point2, a_point, b_point);
+  return Solve::areCoplanar(same_point1, same_point2, a_point, b_point);
 }
 
 auto transform_tri2rect3D(const vector<Triangle> &triangles)
