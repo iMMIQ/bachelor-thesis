@@ -18,12 +18,6 @@ struct PointWithRectangleIndex {
   int r{};
 };
 
-auto isParallel(const Line3D &l1, const Line3D &l2) -> bool;
-auto arePointsCollinear(const Point3D &p1, const Point3D &p2, const Point3D &p3,
-                        const Point3D &p4) -> bool;
-auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D;
-auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
-    -> Line3D;
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
               const Rectangle3DList &list, const vector<vector<bool>> &edge)
     -> vector<int>;

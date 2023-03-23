@@ -21,6 +21,64 @@ using std::ranges::for_each;
 using bg::distance;
 
 namespace Solve {
+auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
+  if (!arePointsCollinear(l1.first, l1.second, l2.first, l2.second) ||
+      l1.first == l1.second || l2.first == l2.second) {
+    return {};
+  }
+
+  vector<Point3D> overlaps_points;
+  for (const auto &p : {l1.first, l1.second, l2.first, l2.second}) {
+    auto k = (p.x - l1.first.x) / (l1.second.x - l1.first.x);
+    if (std::isnan(k)) {
+      k = (p.y - l1.first.y) / (l1.second.y - l1.first.y);
+    }
+    if (std::isnan(k)) {
+      k = (p.z - l1.first.z) / (l1.second.z - l1.first.z);
+    }
+    if (k > -EPS && k < 1 + EPS) {
+      k = (p.x - l2.first.x) / (l2.second.x - l2.first.x);
+      if (std::isnan(k)) {
+        k = (p.y - l2.first.y) / (l2.second.y - l2.first.y);
+      }
+      if (std::isnan(k)) {
+        k = (p.z - l2.first.z) / (l2.second.z - l2.first.z);
+      }
+      if (k > -EPS && k < 1 + EPS) {
+        overlaps_points.emplace_back(p);
+      }
+    }
+  }
+
+  if (overlaps_points.size() > 1) {
+    return {overlaps_points[0], overlaps_points[1]};
+  }
+  return {};
+}
+
+auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
+    -> Line3D {
+  std::array<Point3D, 4> points1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR};
+  std::array<Point3D, 4> points2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
+
+  auto isEdgeOverlap = [](const Point3D &p1, const Point3D &q1,
+                          const Point3D &p2, const Point3D &q2) {
+    auto line = calcOverlapLine(Line3D(p1, q1), Line3D(p2, q2));
+    return distance(line.first, line.second) > EPS;
+  };
+
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (isEdgeOverlap(points1[i], points1[(i + 1) % 4], points2[j],
+                        points2[(j + 1) % 4])) {
+        return calcOverlapLine(Line3D(points1[i], points1[(i + 1) % 4]),
+                               Line3D(points2[j], points2[(j + 1) % 4]));
+      }
+    }
+  }
+  return {};
+}
+
 auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
     -> std::pair<Path, double> {
   constexpr auto INF = std::numeric_limits<double>::max();
@@ -211,6 +269,19 @@ auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
 auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double> {
   auto plane_copy = plane;
+
+  if (plane_copy.size() > 1) {
+    auto &base_r = plane_copy.front();
+    const auto base_line = calcOverlapRectangle(base_r, plane_copy.at(1));
+    Line3D v;
+    for (const auto &p :
+         {base_r.LL, base_r.LR, base_r.UR, base_r.LL + base_r.UR - base_r.LR}) {
+      if (const auto pro = point_projection(p, base_line); pro != p) {
+        v = Line3D(pro, p);
+      }
+    }
+
+  }
 
   for (auto it = plane_copy.begin(); it != plane_copy.end(); ++it) {
     const auto move = it->LL;

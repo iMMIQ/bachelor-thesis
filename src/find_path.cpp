@@ -10,77 +10,6 @@ using Solve::dot;
 using bg::distance;
 
 inline namespace FindPath {
-auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
-  auto dir1 = l1.second - l1.first;
-  auto dir2 = l2.second - l2.first;
-  auto c = cross(dir1, dir2);
-  return c == Point3D();
-}
-
-auto arePointsCollinear(const Point3D &p1, const Point3D &p2, const Point3D &p3,
-                        const Point3D &p4) -> bool {
-  return cross(p2 - p1, p3 - p1) == Point3D() &&
-         cross(p2 - p1, p4 - p1) == Point3D();
-}
-
-auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
-  if (!arePointsCollinear(l1.first, l1.second, l2.first, l2.second) ||
-      l1.first == l1.second || l2.first == l2.second) {
-    return {};
-  }
-
-  vector<Point3D> overlaps_points;
-  for (const auto &p : {l1.first, l1.second, l2.first, l2.second}) {
-    auto k = (p.x - l1.first.x) / (l1.second.x - l1.first.x);
-    if (std::isnan(k)) {
-      k = (p.y - l1.first.y) / (l1.second.y - l1.first.y);
-    }
-    if (std::isnan(k)) {
-      k = (p.z - l1.first.z) / (l1.second.z - l1.first.z);
-    }
-    if (k > -EPS && k < 1 + EPS) {
-      k = (p.x - l2.first.x) / (l2.second.x - l2.first.x);
-      if (std::isnan(k)) {
-        k = (p.y - l2.first.y) / (l2.second.y - l2.first.y);
-      }
-      if (std::isnan(k)) {
-        k = (p.z - l2.first.z) / (l2.second.z - l2.first.z);
-      }
-      if (k > -EPS && k < 1 + EPS) {
-        overlaps_points.emplace_back(p);
-      }
-    }
-  }
-
-  if (overlaps_points.size() > 1) {
-    return {overlaps_points[0], overlaps_points[1]};
-  }
-  return {};
-}
-
-auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
-    -> Line3D {
-  std::array<Point3D, 4> points1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR};
-  std::array<Point3D, 4> points2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
-
-  auto isEdgeOverlap = [](const Point3D &p1, const Point3D &q1,
-                          const Point3D &p2, const Point3D &q2) {
-    auto line = calcOverlapLine(Line3D(p1, q1), Line3D(p2, q2));
-    return distance(line.first, line.second) > EPS;
-  };
-
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      if (isEdgeOverlap(points1[i], points1[(i + 1) % 4], points2[j],
-                        points2[(j + 1) % 4])) {
-        return calcOverlapLine(Line3D(points1[i], points1[(i + 1) % 4]),
-                               Line3D(points2[j], points2[(j + 1) % 4]));
-      }
-    }
-  }
-  return {};
-}
-
 auto Dijkstra(const vector<PointWithRectangleIndex> &pris,
               const Rectangle3DList &list, const vector<vector<bool>> &edge)
     -> vector<int> {
@@ -169,7 +98,7 @@ auto find_rectangle_index(const Rectangle3DList &list, const Point3D &start,
   points.push_back({end, end_rectangle});
 
   auto isRectangleOverlap = [](const Rectangle3D &r1, const Rectangle3D &r2) {
-    auto line = calcOverlapRectangle(r1, r2);
+    auto line = Solve::calcOverlapRectangle(r1, r2);
     return distance(line.first, line.second) > EPS;
   };
 
@@ -293,17 +222,11 @@ auto find_path(Rectangle3DList &list, const Point3D &start, const Point3D &end)
   for (int i = 0; i < indexs.size(); ++i) {
     vector<int> rects{indexs[i]};
     Line3D line;
-    //    Line3D v;
     for (++i; i < indexs.size(); ++i) {
       auto r = list[rects.back()];
-      if (auto overlap_line = calcOverlapRectangle(r, list[indexs[i]]);
-          isParallel(line, overlap_line)) {
+      if (auto overlap_line = Solve::calcOverlapRectangle(r, list[indexs[i]]);
+          Solve::isParallel(line, overlap_line)) {
         line = overlap_line;
-        //        for (const auto &p : {r.LL, r.LR, r.UR, r.LL + r.UR - r.LR}) {
-        //          if (isParallel(line, Line3D(p, line.second))) {
-        //            if (v == Point3D() ||)
-        //          }
-        //        }
         rects.push_back(indexs[i]);
       } else {
         lines.emplace_back(overlap_line);

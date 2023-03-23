@@ -102,6 +102,30 @@ inline auto calc_slope(const Point &a, const Point &b) -> double {
   return (b.y - a.y) / (b.x - a.x);
 }
 
+inline auto arePointsCollinear(const Point3D &p1, const Point3D &p2,
+                               const Point3D &p3, const Point3D &p4) -> bool {
+  return cross(p2 - p1, p3 - p1) == Point3D() &&
+         cross(p2 - p1, p4 - p1) == Point3D();
+}
+
+inline auto isParallel(const Line3D &l1, const Line3D &l2) -> bool {
+  auto dir1 = l1.second - l1.first;
+  auto dir2 = l2.second - l2.first;
+  auto c = cross(dir1, dir2);
+  return c == Point3D();
+}
+
+inline auto isSameLine(const Line3D &l1, const Line3D &l2) -> bool {
+  if (isParallel(l1, l2)){
+
+  }
+  return false;
+}
+
+auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D;
+auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
+    -> Line3D;
+
 auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
     -> std::pair<Path, double>;
 
