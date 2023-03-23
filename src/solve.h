@@ -137,6 +137,6 @@ auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
 auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
     -> std::pair<Path, double>;
 
-auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
+auto solve3D(Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double>;
 } // namespace Solve

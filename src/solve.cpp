@@ -262,16 +262,14 @@ auto solve(const vector<Rectangle> &rectangles, Point start, Point end)
   return {res_path, res};
 }
 
-auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
+auto solve3D(Plane &plane, const Point3D &start, const Point3D &end)
     -> std::pair<Path3D, double> {
-  auto plane_copy = plane;
-
-  if (plane_copy.size() > 1) {
-    auto &base_r = plane_copy.front();
-    const auto base_line = calcOverlapRectangle(base_r, plane_copy.at(1));
+  if (plane.size() > 1) {
+    auto &base_r = plane.front();
+    const auto base_line = calcOverlapRectangle(base_r, plane.at(1));
     Line3D last_line;
     {
-      const auto &r = plane_copy.front();
+      const auto &r = plane.front();
       const std::array<Point3D, 4> ps{r.LL, r.LR, r.UR, r.LL + r.UR - r.LR};
       for (int i = 0; i < 4; ++i) {
         if (const auto line = Line3D(ps[i], ps[(i + 1) % 4]);
@@ -281,7 +279,7 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
         }
       }
     }
-    for (auto &r : plane_copy) {
+    for (auto &r : plane) {
       const std::array<Point3D, 4> ps{r.LL, r.LR, r.UR, r.LL + r.UR - r.LR};
       for (int i = 0; i < 4; ++i) {
         if (const auto line = Line3D(ps[i], ps[(i + 1) % 4]);
@@ -307,6 +305,8 @@ auto solve3D(const Plane &plane, const Point3D &start, const Point3D &end)
       }
     }
   }
+
+  auto plane_copy = plane;
 
   for (auto it = plane_copy.begin(); it != plane_copy.end(); ++it) {
     const auto move = it->LL;
