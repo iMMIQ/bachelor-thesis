@@ -121,7 +121,7 @@ auto transform_tri2rect3D(const vector<Triangle> &triangles)
     return Point3D((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
   };
 
-  auto calc_area = [](const Triangle &t) {
+  auto calc_triangle_area = [](const Triangle &t) {
     auto a = distance(t.A, t.B);
     auto b = distance(t.B, t.C);
     auto c = distance(t.C, t.A);
@@ -137,7 +137,7 @@ auto transform_tri2rect3D(const vector<Triangle> &triangles)
       while (!q.empty()) {
         auto t = q.front();
         q.pop();
-        if (calc_area(t) > MIN_AREA) {
+        if (calc_triangle_area(t) > MIN_AREA) {
           auto LR = mid_point(t.A, t.B);
           auto LL = mid_point(t.A, t.C);
           auto UR = Solve::point_projection(LR, Line3D(t.B, t.C));
@@ -150,6 +150,54 @@ auto transform_tri2rect3D(const vector<Triangle> &triangles)
       }
     }
   }
+
+  auto calc_2line_dis = [](const Line3D &l1, const Line3D &l2) -> double {
+    auto p = Solve::point_projection(l1.first, l2);
+    if (Solve::is_point_in_segment(p, l2)) {
+      return distance(p, l1.first);
+    }
+    p = Solve::point_projection(l1.second, l2);
+    if (Solve::is_point_in_segment(p, l2)) {
+      return distance(p, l1.second);
+    }
+    p = Solve::point_projection(l2.first, l1);
+    if (Solve::is_point_in_segment(p, l1)) {
+      return distance(p, l2.first);
+    }
+    p = Solve::point_projection(l2.second, l1);
+    if (Solve::is_point_in_segment(p, l1)) {
+      return distance(p, l2.second);
+    }
+    return std::numeric_limits<double>::max();
+  };
+
+  auto calc_rectangle_area = [](const Rectangle3D &r) {
+    return distance(r.LL, r.LR) * distance(r.UR, r.LR);
+  };
+
+  for (auto &r1 : res) {
+    for (auto &r2 : res) {
+      if (&r1 != &r2) {
+        std::array<Point3D, 4> ps1{r1.LL, r1.LR, r1.UR, r1.LL + r1.UR - r1.LR};
+        std::array<Point3D, 4> ps2{r2.LL, r2.LR, r2.UR, r2.LL + r2.UR - r2.LR};
+        std::array<Line3D, 4> ls1{
+            Line3D(ps1[0], ps1[1]), Line3D(ps1[1], ps1[2]),
+            Line3D(ps1[2], ps1[3]), Line3D(ps1[3], ps1[0])};
+        std::array<Line3D, 4> ls2{
+            Line3D(ps2[0], ps2[1]), Line3D(ps2[1], ps2[2]),
+            Line3D(ps2[2], ps2[3]), Line3D(ps2[3], ps2[0])};
+        for (auto &l1 : ls1) {
+          for (auto &l2 : ls2) {
+            if (Solve::isParallel(l1, l2) && calc_2line_dis(l1, l2) < 0.1) {
+              if (calc_rectangle_area(r1) < calc_rectangle_area(r2)) {
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   return res;
 }
 } // namespace Input

@@ -8,16 +8,10 @@ using std::cout;
 using std::endl;
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-  //  int n = 0;
-  //  cin >> n;
-  //  Plane plane(n, Rectangle3D());
-  //  for (int i = 0; i < n; ++i) {
-  //    cin >> plane[i].LL >> plane[i].UR >> plane[i].LR;
-  //  }
-  auto plane = Input::transform_tri2rect3D(
-      Input::read_model("../test/Cube_3d_printing_sample.stl"));
-  Point3D start(-55, 60, 20);
-  Point3D end(-35, 40, 0);
+  auto plane =
+      Input::transform_tri2rect3D(Input::read_model("../test/ball.stl"));
+  Point3D start = plane.front().LL;
+  Point3D end = plane.back().LL;
   //  cin >> start >> end;
   auto ans = find_path(plane, start, end);
   cout << "path:\n";

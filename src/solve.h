@@ -130,6 +130,17 @@ inline auto isSameAxis(const Line3D &l1, const Line3D &l2) -> bool {
   return dot(l1.first, l2.first) > 0;
 }
 
+inline auto is_point_in_segment(const Point3D &p, const Line3D &l) -> bool {
+  auto k = (p.x - l.first.x) / (l.second.x - l.first.x);
+  if (std::isnan(k)) {
+    k = (p.y - l.first.y) / (l.second.y - l.first.y);
+  }
+  if (std::isnan(k)) {
+    k = (p.z - l.first.z) / (l.second.z - l.first.z);
+  }
+  return k > -EPS && k < 1 + EPS;
+}
+
 auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D;
 auto calcOverlapRectangle(const Rectangle3D &r1, const Rectangle3D &r2)
     -> Line3D;

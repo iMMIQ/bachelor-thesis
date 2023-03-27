@@ -29,24 +29,8 @@ auto calcOverlapLine(const Line3D &l1, const Line3D &l2) -> Line3D {
 
   vector<Point3D> overlaps_points;
   for (const auto &p : {l1.first, l1.second, l2.first, l2.second}) {
-    auto k = (p.x - l1.first.x) / (l1.second.x - l1.first.x);
-    if (std::isnan(k)) {
-      k = (p.y - l1.first.y) / (l1.second.y - l1.first.y);
-    }
-    if (std::isnan(k)) {
-      k = (p.z - l1.first.z) / (l1.second.z - l1.first.z);
-    }
-    if (k > -EPS && k < 1 + EPS) {
-      k = (p.x - l2.first.x) / (l2.second.x - l2.first.x);
-      if (std::isnan(k)) {
-        k = (p.y - l2.first.y) / (l2.second.y - l2.first.y);
-      }
-      if (std::isnan(k)) {
-        k = (p.z - l2.first.z) / (l2.second.z - l2.first.z);
-      }
-      if (k > -EPS && k < 1 + EPS) {
-        overlaps_points.emplace_back(p);
-      }
+    if (is_point_in_segment(p, l1) && is_point_in_segment(p, l2)) {
+      overlaps_points.emplace_back(p);
     }
   }
 
