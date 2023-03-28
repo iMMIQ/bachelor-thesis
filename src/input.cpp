@@ -1,6 +1,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <iostream>
 
 #include "input.h"
 #include "solve.h"
@@ -190,14 +191,37 @@ auto transform_tri2rect3D(const vector<Triangle> &triangles)
           for (auto &l2 : ls2) {
             if (Solve::isParallel(l1, l2) && calc_2line_dis(l1, l2) < 0.1) {
               if (calc_rectangle_area(r1) < calc_rectangle_area(r2)) {
+                vector<Point3D> last;
+                for (auto &i : ps1) {
+                  if (i != l1.first && i != l1.second) {
+                    last.push_back(i);
+                  }
+                }
+                Rectangle3D tmp;
+                tmp.UR = Solve::point_projection(last[0], l2);
+                tmp.LR = last[0];
+                tmp.LL = last[1];
+                r1 = tmp;
+              } else {
+                vector<Point3D> last;
+                for (auto &i : ps2) {
+                  if (i != l2.first && i != l2.second) {
+                    last.push_back(i);
+                  }
+                }
+                Rectangle3D tmp;
+                tmp.UR = Solve::point_projection(last[0], l1);
+                tmp.LR = last[0];
+                tmp.LL = last[1];
+                r2 = tmp;
               }
+              break;
             }
           }
         }
       }
     }
   }
-
   return res;
 }
 } // namespace Input
